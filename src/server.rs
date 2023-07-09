@@ -7,7 +7,7 @@ mod utils;
 pub(crate) async fn set_tdp_handler(path: web::Path<u32>) -> Result<String> {
     let tdp = path.into_inner();
     println!("Set TDP!! {}", tdp);
-    Ok(utils::set_tdp(tdp)?.to_string())
+    Ok(utils::set_tdp(tdp).unwrap().to_string())
 }
 
 pub fn start_server() -> thread::JoinHandle<()> {
