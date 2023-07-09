@@ -29,6 +29,9 @@ jobs:
           command: build
           args: --release --target x86_64-unknown-linux-gnu
 
+      - name: Strip Debug Symbols
+        run: strip -s target/x86_64-unknown-linux-gnu/release/ally-steam-patch
+
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
