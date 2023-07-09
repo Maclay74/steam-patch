@@ -16,16 +16,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📚 Checkout
+      - name: 📚 Checkout Code
         uses: actions/checkout@v2
-      - name: 📦 Warm up downloads
+
+      - name: 🛠️ Set Script Permissions
+        run: chmod +x ./install.sh
+
+      - name: 📦 Cache Cargo Registry
         uses: actions/cache@v2
         with:
           path: ~/.cargo/registry
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('./Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
-      - name: 🎯 Warm up targets
+
+      - name: 🎯 Cache Target
         uses: actions/cache@v2
         with:
           path: target
@@ -59,3 +64,4 @@ jobs:
         with:
           files: |
             target/x86_64-unknown-linux-gnu/release/ally-steam-patch
+            install.sh
