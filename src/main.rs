@@ -1,17 +1,17 @@
 mod server;
-
-use actix_web::{App, HttpServer};
-use server::set_tdp;
+mod steam;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let _three = HttpServer::new(|| App::new()
-        .service(set_tdp)
-    )
-    .bind(("127.0.0.1", 1338))?
-    .run();
 
-    println!("Server started!");
+    let mut threads = Vec::new();
 
-    _three.await
+    threads.push(server::start_server());
+    threads.push(steam::patch_steam());
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    Ok(())
 }
