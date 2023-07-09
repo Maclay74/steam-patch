@@ -16,4 +16,4 @@ sudo rm -f "/etc/systemd/system/ally-steam-patch.service"
 rm -rf "/tmp/ally-steam-patch"
 
 # Cleanup services folder
-sudo rm "${WORKING_FOLDER}"
+sudo rm -rf "${WORKING_FOLDER}"
