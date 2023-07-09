@@ -67,3 +67,4 @@ jobs:
           files: |
             target/x86_64-unknown-linux-gnu/release/ally-steam-patch
             install.sh
+            uninstall.sh
