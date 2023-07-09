@@ -1,4 +1,5 @@
 use std::process::{Command, Output};
+use std::io::{self, Write};
 
 pub fn set_tdp(tdp: u32) -> std::io::Result<u32> {
     let target_tdp = tdp * 1000;
@@ -9,13 +10,20 @@ pub fn set_tdp(tdp: u32) -> std::io::Result<u32> {
     Ok(tdp)
 }
 
-fn run_command(command: &[&str]) -> std::io::Result<Output> {
+fn run_command(command: &[&str]) -> io::Result<Output> {
     let mut full_command = vec!["sudo", "-S"];
     full_command.extend_from_slice(command);
 
-    Command::new(full_command[0])
+    let mut child = Command::new(full_command[0])
         .args(&full_command[1..])
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
-        .output()
+        .spawn()?;
+
+    if let Some(stdin) = child.stdin.as_mut() {
+        stdin.write_all("gamer\n".as_bytes())?;
+    }
+
+    let output = child.wait_with_output()?;
+    Ok(output)
 }
