@@ -8,6 +8,7 @@ use tungstenite::Message;
 use std::io::{Error};
 use std::path::{Path, PathBuf};
 use std::env;
+use std::time::{Duration, Instant};
 
 mod patches;
 
@@ -20,7 +21,13 @@ struct Tab {
 fn get_context() -> Option<String> {
     println!("Getting Steam...");
 
+    let start_time = Instant::now();
     loop {
+        if start_time.elapsed() > Duration::from_secs(60) {
+            println!("Timeout while trying to fetch Steam data!");
+            return None;
+        }
+
         match get("http://localhost:8080/json") {
             Ok(response) => {
                 match response.json::<Vec<Tab>>() {
@@ -38,20 +45,21 @@ fn get_context() -> Option<String> {
 }
 
 fn reboot(link: String) {
-    match connect(link) {
-        Ok((mut socket, _)) => {
-            let message = serde_json::json!({
-                "id": 1,
-                "method": "Page.reload",
-            });
-            match socket.write_message(Message::Text(message.to_string())) {
-                Ok(_) => println!("Steam Rebooted"),
-                Err(err) => println!("Failed to reboot Steam: {:?}", err)
-            }
-        }
+    let (mut socket, _) = match connect(link) {
+        Ok(socket) => socket,
         Err(_) => {
-            println!("Couldn't reload Steam!")
+            println!("Couldn't reload Steam!");
+            return;
         }
+    };
+
+    let message = serde_json::json!({
+        "id": 1,
+        "method": "Page.reload",
+    });
+    match socket.write_message(Message::Text(message.to_string())) {
+        Ok(_) => println!("Steam Rebooted"),
+        Err(err) => println!("Failed to reboot Steam: {:?}", err)
     }
 }
 
@@ -69,7 +77,6 @@ fn apply_patches(steamChunkPath: PathBuf) -> Result<(), Error> {
 
     Ok(())
 }
-
 fn get_chunk() -> Result<PathBuf, Error> {
     // Depending on the system, different path
     let steamui_path = if cfg!(windows) {
@@ -109,10 +116,10 @@ fn get_chunk() -> Result<PathBuf, Error> {
         })
         .collect();
 
-    if matching_files.is_empty() {
+    if matching_files.is_empty() || matching_files.len() > 1 {
         return Err(Error::new(
             std::io::ErrorKind::NotFound,
-            "Chunk not found",
+            "Chunk not found or multiple chunks found",
         ));
     }
 
@@ -121,11 +128,25 @@ fn get_chunk() -> Result<PathBuf, Error> {
 }
 
 pub fn patch_steam() -> thread::JoinHandle<()> {
-    let steamChunkPath = get_chunk().unwrap();
+    let steamChunkPath = match get_chunk() {
+        Ok(chunk) => chunk,
+        Err(err) => {
+            println!("Failed to get steam chunk: {:?}", err);
+            return thread::spawn(|| {});
+        }
+    };
 
     thread::spawn(move || {
-        let link = get_context().unwrap();
-        apply_patches(steamChunkPath).unwrap();
-        reboot(link);
+        let link = match get_context() {
+            Some(context) => context,
+            None => {
+                println!("Failed to get context!");
+                return;
+            }
+        };
+        match apply_patches(steamChunkPath) {
+            Ok(_) => reboot(link),
+            Err(err) => println!("Failed to apply patches: {:?}", err),
+        };
     })
 }

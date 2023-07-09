@@ -1,4 +1,4 @@
-use actix_web::{App, web, get,  Result, HttpServer};
+use actix_web::{App, web, get, Result, HttpServer};
 use std::thread;
 
 mod utils;
@@ -6,7 +6,11 @@ mod utils;
 #[get("/set_tdp/{tdp}")]
 pub(crate) async fn set_tdp_handler(path: web::Path<u32>) -> Result<String> {
     let tdp = path.into_inner();
-    Ok(utils::set_tdp(tdp).unwrap().to_string())
+    utils::set_tdp(tdp)
+        .map(|tdp| tdp.to_string())
+        .map_err(|err| {
+            actix_web::error::ErrorBadRequest(err)
+        })
 }
 
 pub fn start_server() -> thread::JoinHandle<()> {

@@ -1,13 +1,15 @@
 use std::process::{Command, Output};
 use std::io::{self, Write};
 
-pub fn set_tdp(tdp: u32) -> std::io::Result<u32> {
+pub fn set_tdp(tdp: u32) -> io::Result<u32> {
     let target_tdp = tdp * 1000;
     let boost_tdp = target_tdp + 2000;
 
     let command = ["ryzenadj", &format!("--stapm-limit={}", target_tdp), &format!("--fast-limit={}", boost_tdp), &format!("--slow-limit={}", target_tdp)];
-    run_command(&command).unwrap();
-    Ok(tdp)
+    match run_command(&command) {
+        Ok(_) => Ok(tdp),
+        Err(err) => Err(err),
+    }
 }
 
 fn run_command(command: &[&str]) -> io::Result<Output> {

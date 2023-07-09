@@ -3,7 +3,6 @@ mod steam;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     let mut threads = Vec::new();
 
     threads.push(server::start_server());
