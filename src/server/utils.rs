@@ -1,7 +1,7 @@
 use std::process::{Command, Output};
 use std::io::{self, Write};
 
-pub fn set_tdp(tdp: u32) -> io::Result<u32> {
+pub fn set_tdp(tdp: i32) -> io::Result<i32> {
     let target_tdp = tdp * 1000;
     let boost_tdp = target_tdp + 2000;
 
