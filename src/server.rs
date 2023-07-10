@@ -5,12 +5,14 @@ use actix_cors::Cors;
 
 mod utils;
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct SettingsRequest {
     global: Option<GlobalConfig>,
     per_app: Option<PerAppConfig>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct GlobalConfig {
     debug_force_hdr_support: Option<bool>,
@@ -27,6 +29,7 @@ struct GlobalConfig {
     system_trace_service_state: Option<i32>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct PerAppConfig {
     cpu_governor: Option<i32>,
@@ -72,7 +75,7 @@ pub fn start_server() -> thread::JoinHandle<()> {
                 .wrap(
                     Cors::permissive() // enables CORS for all origins
                 )
-                .service(set_tdp_handler)
+                .service(update_settings)
             )
                 .bind(("127.0.0.1", 1338))
                 .expect("Failed to bind server to address")
