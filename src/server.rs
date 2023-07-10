@@ -1,16 +1,21 @@
-use actix_web::{App, web, get, Result, HttpServer};
+use actix_web::{App, web, post, Result, HttpServer, HttpResponse};
 use std::thread;
+use serde::Deserialize;
 
 mod utils;
 
-#[get("/set_tdp/{tdp}")]
-pub(crate) async fn set_tdp_handler(path: web::Path<u32>) -> Result<String> {
-    let tdp = path.into_inner();
-    utils::set_tdp(tdp)
-        .map(|tdp| tdp.to_string())
-        .map_err(|err| {
-            actix_web::error::ErrorBadRequest(err)
-        })
+#[derive(Deserialize)]
+struct SettingsRequest {
+    tdp: u32,
+}
+
+#[post("/update_settings")]
+async fn set_tdp_handler(body: web::Json<SettingsRequest>) -> Result<HttpResponse> {
+    //let tdp = body.tdp;
+    //utils::set_tdp(tdp)
+    //    .map(|_| HttpResponse::NoContent().finish())
+    //    .map_err(|err| actix_web::error::ErrorBadRequest(err))
+    Ok(HttpResponse::NoContent().finish())
 }
 
 pub fn start_server() -> thread::JoinHandle<()> {
