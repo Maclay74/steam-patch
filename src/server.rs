@@ -1,6 +1,7 @@
 use actix_web::{App, web, post, Result, HttpServer, HttpResponse};
 use std::thread;
 use serde::Deserialize;
+use actix_cors::Cors;
 
 mod utils;
 
@@ -62,7 +63,12 @@ async fn set_tdp_handler(settings: web::Json<SettingsRequest>) -> Result<HttpRes
 pub fn start_server() -> thread::JoinHandle<()> {
     thread::spawn(|| {
         let _ = actix_web::rt::System::new().block_on(async {
-            let _three = HttpServer::new(|| App::new().service(set_tdp_handler))
+            let _three = HttpServer::new(|| App::new()
+                .wrap(
+                    Cors::permissive() // enables CORS for all origins
+                )
+                .service(set_tdp_handler)
+            )
                 .bind(("127.0.0.1", 1338))
                 .expect("Failed to bind server to address")
                 .run();
