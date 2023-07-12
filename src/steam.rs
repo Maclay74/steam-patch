@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 use std::env;
 use std::time::{Duration, Instant};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 mod patches;
 
@@ -130,32 +131,26 @@ fn get_chunk() -> Result<PathBuf, Error> {
     Ok(steamui_path.join(first_matching_file))
 }
 
-pub fn patch_steam() {
+pub fn patch_steam() -> Result<notify::RecommendedWatcher, ()> {
     let steam_chunk_path = match get_chunk() {
         Ok(chunk) => chunk,
         Err(err) => {
             println!("Failed to get steam chunk: {:?}", err);
-            return;
+            return Err(());
         }
     };
 
-    println!("Chunk Path: {:?}", &steam_chunk_path);
-
-    let mut watcher: Result<RecommendedWatcher, _> = notify::recommended_watcher(move |res| {
+    let mut watcher: notify::RecommendedWatcher = notify::recommended_watcher(move |res| {
         match res {
-            Ok(_) =>  {
-                println!("File updated");
+            Ok(event) =>  {
+                println!("File event kind: {:?}", event);
+                // TODO Debounce events, check performance on Linux
             },
             Err(e) => println!("watch error: {:?}", e),
         }
-    });
+    }).unwrap();
 
-    if let Ok(ref mut w) = watcher {
-        if let Err(e) = w.watch(&steam_chunk_path, RecursiveMode::Recursive) {
-            println!("Error watching path: {:?}", e);
-        }
-    }
-    else if let Err(e) = watcher {
-        println!("Error creating watcher: {:?}", e);
-    }
+    watcher.watch(&steam_chunk_path, RecursiveMode::Recursive).unwrap();
+
+    Ok(watcher)
 }
