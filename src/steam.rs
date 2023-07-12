@@ -1,7 +1,7 @@
 #![allow(non_snake_case)] // Allow non-snake_case identifiers
 
 use reqwest::blocking::get;
-use std::{fs, thread};
+use std::{fs};
 use serde::Deserialize;
 use tungstenite::connect;
 use tungstenite::Message;
@@ -9,6 +9,8 @@ use std::io::{Error};
 use std::path::{Path, PathBuf};
 use std::env;
 use std::time::{Duration, Instant};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+
 
 mod patches;
 
@@ -77,6 +79,7 @@ fn apply_patches(steamChunkPath: PathBuf) -> Result<(), Error> {
 
     Ok(())
 }
+
 fn get_chunk() -> Result<PathBuf, Error> {
     // Depending on the system, different path
     let steamui_path = if cfg!(windows) {
@@ -127,26 +130,32 @@ fn get_chunk() -> Result<PathBuf, Error> {
     Ok(steamui_path.join(first_matching_file))
 }
 
-pub fn patch_steam() -> thread::JoinHandle<()> {
-    let steamChunkPath = match get_chunk() {
+pub fn patch_steam() {
+    let steam_chunk_path = match get_chunk() {
         Ok(chunk) => chunk,
         Err(err) => {
             println!("Failed to get steam chunk: {:?}", err);
-            return thread::spawn(|| {});
+            return;
         }
     };
 
-    thread::spawn(move || {
-        let link = match get_context() {
-            Some(context) => context,
-            None => {
-                println!("Failed to get context!");
-                return;
-            }
-        };
-        match apply_patches(steamChunkPath) {
-            Ok(_) => reboot(link),
-            Err(err) => println!("Failed to apply patches: {:?}", err),
-        };
-    })
+    println!("Chunk Path: {:?}", &steam_chunk_path);
+
+    let mut watcher: Result<RecommendedWatcher, _> = notify::recommended_watcher(move |res| {
+        match res {
+            Ok(_) =>  {
+                println!("File updated");
+            },
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    });
+
+    if let Ok(ref mut w) = watcher {
+        if let Err(e) = w.watch(&steam_chunk_path, RecursiveMode::Recursive) {
+            println!("Error watching path: {:?}", e);
+        }
+    }
+    else if let Err(e) = watcher {
+        println!("Error creating watcher: {:?}", e);
+    }
 }
