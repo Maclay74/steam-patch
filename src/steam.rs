@@ -81,13 +81,32 @@ fn apply_patches(steamChunkPath: PathBuf) -> Result<(), Error> {
     Ok(())
 }
 
+fn get_username_argument() -> String {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 2 {
+        return String::from("gamer");
+    }
+
+    let arg = &args[1];
+
+    if arg.starts_with("--user=") {
+        let username = arg.trim_start_matches("--user=");
+        String::from(username)
+    } else {
+        String::from("gamer")
+    }
+}
+
 fn get_chunk() -> Result<PathBuf, Error> {
+    let username = get_username_argument();
+
     // Depending on the system, different path
     let steamui_path = if cfg!(windows) {
         env::var_os("PROGRAMFILES(X86)")
             .map(|path| Path::new(&path).join("Steam").join("steamui"))
     } else {
-        dirs::home_dir().map(|home| home.join(".local/share/Steam/steamui"))
+        dirs::home_dir().map(|home| home.join(format!("/home/{}/.local/share/Steam/steamui", username)))
     };
 
     // Steam folder not found
@@ -131,7 +150,7 @@ fn get_chunk() -> Result<PathBuf, Error> {
     Ok(steamui_path.join(first_matching_file))
 }
 
-pub fn patch_steam() -> Result<notify::RecommendedWatcher, ()> {
+pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     let steam_chunk_path = match get_chunk() {
         Ok(chunk) => chunk,
         Err(err) => {
@@ -140,7 +159,7 @@ pub fn patch_steam() -> Result<notify::RecommendedWatcher, ()> {
         }
     };
 
-    let mut watcher: notify::RecommendedWatcher = notify::recommended_watcher(move |res| {
+    let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res| {
         match res {
             Ok(event) =>  {
                 println!("File event kind: {:?}", event);
