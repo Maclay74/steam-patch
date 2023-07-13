@@ -10,7 +10,6 @@ use std::path::{Path, PathBuf};
 use std::env;
 use std::time::{Duration, Instant};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use std::sync::{Arc, Mutex};
 use sysinfo::{ProcessExt, SystemExt};
 
 mod patches;
@@ -79,6 +78,19 @@ fn apply_patches(steamChunkPath: &PathBuf) -> Result<(), Error> {
     fs::write(&steamChunkPath, content)?;
 
     Ok(())
+}
+
+fn is_chunk_patched(steamChunkPath: &PathBuf) -> bool  {
+    let content = fs::read_to_string(&steamChunkPath).unwrap();
+    let patches = patches::get_patches();
+
+    for patch in patches {
+        if !content.contains(&patch.replacement_text) {
+            return false;
+        }
+    }
+
+    true
 }
 
 fn get_username() -> String {
@@ -165,25 +177,24 @@ fn is_steam_running() -> bool {
     false
 }
 
-fn on_chunk_change(_: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, is_chunk_patched: Arc<Mutex<bool>>) {
+fn on_chunk_change() {
+    let steam_chunk_path = match get_chunk() {
+        Ok(chunk) => chunk,
+        Err(err) => {
+            println!("Failed to get steam chunk: {:?}", err);
+            return ;
+        }
+    };
 
-    // Chunk has changed.
-    // Check if Steam running - it would mean that since the patcher started,
-    // something has changed the chunk, presumably Steam client updated itself.
-
-    if *is_chunk_patched.lock().unwrap() {
-        return;
+    if is_chunk_patched(&steam_chunk_path) {
+        return
     }
 
-    let path = steam_chunk_path.lock().unwrap().clone();
-    println!("File has changed!: {:?}", path);
+    println!("File has changed!: {:?}", steam_chunk_path);
 
-    match apply_patches(&path) {
-        Ok(_) => {
-            println!("Patches applied successfully");
-            *is_chunk_patched.lock().unwrap() = true;
-        }
-        Err(err) => println!("Failed to apply patches: {:?}", err),
+    match apply_patches(&steam_chunk_path) {
+        Ok(_) => println!("Patches applied successfully"),
+        Err(err) => println!("Failed to apply patches: {:?}", err)
     };
 }
 
@@ -191,19 +202,14 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
 
     // Get Steam chunk link
     let steam_chunk_path = match get_chunk() {
-        Ok(chunk) => Arc::new(Mutex::new(chunk)),
+        Ok(chunk) => chunk,
         Err(err) => {
             println!("Failed to get steam chunk: {:?}", err);
             return Err(());
         }
     };
 
-    let is_chunk_patched = Arc::new(Mutex::new(false));
-
-    let path_to_watch = Arc::clone(&steam_chunk_path);
-    let is_chunk_patched_clone = Arc::clone(&is_chunk_patched);
-
-    match apply_patches(&*path_to_watch.lock().unwrap()) {
+    match apply_patches(&steam_chunk_path) {
         Ok(_) =>  {
             //*is_chunk_patched_clone.lock().unwrap() = true;
             if is_steam_running() {
@@ -219,12 +225,12 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     // Watch for changes in the chunk.
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
         match res {
-            Ok(event) => on_chunk_change(event, Arc::clone(&path_to_watch), Arc::clone(&is_chunk_patched_clone)),
+            Ok(_) => on_chunk_change(),
             Err(e) => println!("watch error: {:?}", e),
         }
     }).unwrap();
 
-    watcher.watch(&*steam_chunk_path.lock().unwrap(), RecursiveMode::Recursive).unwrap();
+    watcher.watch(&steam_chunk_path, RecursiveMode::Recursive).unwrap();
 
     Ok(watcher)
 }
