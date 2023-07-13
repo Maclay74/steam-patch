@@ -16,3 +16,4 @@ dirs = "5.0.1"
 actix-cors = "0.6.4"
 notify = { version = "6.0.1", features = ["serde"] }
 futures = "0.3"
+sysinfo = "0.29.4"
