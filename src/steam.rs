@@ -203,7 +203,7 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     let path_to_watch = Arc::clone(&steam_chunk_path);
     let is_chunk_patched_clone = Arc::clone(&is_chunk_patched);
 
-    match apply_patches(&*path) {
+    match apply_patches(&*path_to_watch.lock().unwrap()) {
         Ok(_) =>  {
             //*is_chunk_patched_clone.lock().unwrap() = true;
             if is_steam_running() {
