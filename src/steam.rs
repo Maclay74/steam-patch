@@ -158,7 +158,7 @@ fn get_steam_pid() -> Option<Pid> {
     sys.refresh_all();
 
     for (pid, process) in sys.processes() {
-        if process.name() == "Steam" {
+        if process.name() == "steam" {
             return Some(*pid);
         }
     }
