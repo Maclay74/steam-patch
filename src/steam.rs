@@ -171,7 +171,7 @@ fn on_chunk_change(_: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, is_c
     // Check if Steam running - it would mean that since the patcher started,
     // something has changed the chunk, presumably Steam client updated itself.
 
-    if is_chunk_patched.lock().unwrap() {
+    if *is_chunk_patched.lock().unwrap() {
         return;
     }
 
