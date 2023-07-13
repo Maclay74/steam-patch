@@ -1,7 +1,7 @@
 #![allow(non_snake_case)] // Allow non-snake_case identifiers
 
 use reqwest::blocking::get;
-use std::{fs};
+use std::{fs, thread};
 use serde::Deserialize;
 use tungstenite::connect;
 use tungstenite::Message;
@@ -43,6 +43,8 @@ fn get_context() -> Option<String> {
             }
             Err(_) => println!("Failed to fetch Steam data!")
         }
+
+        thread::sleep(Duration::from_millis(50));
     }
 }
 
