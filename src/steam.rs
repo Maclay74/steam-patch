@@ -176,7 +176,7 @@ fn on_chunk_change(_: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, is_c
     }
 
     let path = steam_chunk_path.lock().unwrap().clone();
-    println!("Path to watch: {:?}", path);
+    println!("File has changed!: {:?}", path);
 
     match apply_patches(&path) {
         Ok(_) => {
@@ -203,19 +203,17 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     let path_to_watch = Arc::clone(&steam_chunk_path);
     let is_chunk_patched_clone = Arc::clone(&is_chunk_patched);
 
-    // If Steam is already running, apply patches and soft reboot
-    if is_steam_running() {
-        let path = path_to_watch.lock().unwrap();
-        match apply_patches(&*path) {
-            Ok(_) =>  match get_context() {
-                Some(link) => {
-                    reboot(link);
-                    *is_chunk_patched_clone.lock().unwrap() = true;
-                },
-                None => println!("Can't get Steam context"),
-            },
-            Err(_) => println!("Couldn't patch chunk")
+    match apply_patches(&*path) {
+        Ok(_) =>  {
+            //*is_chunk_patched_clone.lock().unwrap() = true;
+            if is_steam_running() {
+                match get_context() {
+                    Some(link) =>reboot(link),
+                    None => println!("Can't get Steam context")
+                }
+            }
         }
+        Err(_) => println!("Couldn't patch chunk")
     }
 
     // Watch for changes in the chunk.
