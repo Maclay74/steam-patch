@@ -7,7 +7,7 @@ async fn main() -> std::io::Result<()> {
 
     threads.push(server::start_server());
 
-    let watcher = match steam::patch_steam() {
+    let _watcher = match steam::patch_steam() {
         Ok(watcher) => watcher,
         Err(_) => {
             eprintln!("Error setting up file watcher. Exiting...");

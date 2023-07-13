@@ -11,8 +11,7 @@ use std::env;
 use std::time::{Duration, Instant};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::sync::{Arc, Mutex};
-use std::thread;
-use sysinfo::{ProcessExt, SystemExt, Pid};
+use sysinfo::{ProcessExt, SystemExt};
 
 mod patches;
 
@@ -151,23 +150,30 @@ fn get_chunk() -> Result<PathBuf, Error> {
     Ok(steamui_path.join(first_matching_file))
 }
 
-fn get_steam_pid() -> Option<Pid> {
+fn is_steam_running() -> bool {
     let mut sys = sysinfo::System::new_all();
 
     // We need to update the system value to get the fresh process list
     sys.refresh_all();
 
-    for (pid, process) in sys.processes() {
+    for (_, process) in sys.processes() {
         if process.name() == "steam" {
-            return Some(*pid);
+            return true;
         }
     }
 
-    None
+    false
 }
 
-fn handle_event(event: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, steam_pid: Arc<Mutex<Option<Pid>>>) {
-    println!("File event kind: {:?}", event);
+fn on_chunk_change(_: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, is_chunk_patched: Arc<Mutex<bool>>) {
+
+    // Chunk has changed.
+    // Check if Steam running - it would mean that since the patcher started,
+    // something has changed the chunk, presumably Steam client updated itself.
+
+    if is_chunk_patched.lock().unwrap() {
+        return;
+    }
 
     let path = steam_chunk_path.lock().unwrap().clone();
     println!("Path to watch: {:?}", path);
@@ -175,10 +181,7 @@ fn handle_event(event: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, ste
     match apply_patches(&path) {
         Ok(_) => {
             println!("Patches applied successfully");
-
-            // Once patches are applied, update steam_pid
-            //let mut pid_guard = steam_pid.lock().unwrap();
-            //*pid_guard = Some(get_steam_pid());
+            *is_chunk_patched.lock().unwrap() = true;
         }
         Err(err) => println!("Failed to apply patches: {:?}", err),
     };
@@ -195,25 +198,30 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         }
     };
 
-    let steam_pid = Arc::new(Mutex::new(get_steam_pid()));
+    let is_chunk_patched = Arc::new(Mutex::new(false));
 
     let path_to_watch = Arc::clone(&steam_chunk_path);
-    let steam_pid_clone = Arc::clone(&steam_pid);
+    let is_chunk_patched_clone = Arc::clone(&is_chunk_patched);
 
     // If Steam is already running, apply patches and soft reboot
-    if !steam_pid_clone.lock().unwrap().is_none() {
+    if is_steam_running() {
         let path = path_to_watch.lock().unwrap();
-        apply_patches(&*path).expect("Couldn't patch Steam chunk");
-        match get_context() {
-            Some(link) => reboot(link),
-            None => println!("Can't get Steam context"),
-        };
+        match apply_patches(&*path) {
+            Ok(_) =>  match get_context() {
+                Some(link) => {
+                    reboot(link);
+                    *is_chunk_patched_clone.lock().unwrap() = true;
+                },
+                None => println!("Can't get Steam context"),
+            },
+            Err(_) => println!("Couldn't patch chunk")
+        }
     }
 
     // Watch for changes in the chunk.
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
         match res {
-            Ok(event) => handle_event(event, Arc::clone(&path_to_watch), Arc::clone(&steam_pid_clone)),
+            Ok(event) => on_chunk_change(event, Arc::clone(&path_to_watch), Arc::clone(&is_chunk_patched_clone)),
             Err(e) => println!("watch error: {:?}", e),
         }
     }).unwrap();
