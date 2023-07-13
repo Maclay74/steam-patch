@@ -67,7 +67,7 @@ fn reboot(link: String) {
     }
 }
 
-fn apply_patches(steamChunkPath: PathBuf) -> Result<(), Error> {
+fn apply_patches(steamChunkPath: &PathBuf) -> Result<(), Error> {
     let mut content = fs::read_to_string(&steamChunkPath)?;
     let patches = patches::get_patches();
 
@@ -172,14 +172,14 @@ fn handle_event(event: notify::Event, steam_chunk_path: Arc<Mutex<PathBuf>>, ste
     let path = steam_chunk_path.lock().unwrap().clone();
     println!("Path to watch: {:?}", path);
 
-    match apply_patches(path) {
+    match apply_patches(&path) {
         Ok(_) => {
             println!("Patches applied successfully");
 
             // Once patches are applied, update steam_pid
             //let mut pid_guard = steam_pid.lock().unwrap();
             //*pid_guard = Some(get_steam_pid());
-        },
+        }
         Err(err) => println!("Failed to apply patches: {:?}", err),
     };
 }
@@ -195,19 +195,22 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         }
     };
 
-    // If Steam already running, we patch it and reboot via CEF
     let steam_pid = Arc::new(Mutex::new(get_steam_pid()));
-
 
     let path_to_watch = Arc::clone(&steam_chunk_path);
     let steam_pid_clone = Arc::clone(&steam_pid);
 
-    if steam_pid_clone.lock().unwrap().is_none() {
-        println!("Steam PID is None");
-    } else {
-        println!("Steam PID is {:?}", steam_pid_clone);
+    // If Steam is already running, apply patches and soft reboot
+    if !steam_pid_clone.lock().unwrap().is_none() {
+        let path = path_to_watch.lock().unwrap();
+        apply_patches(&*path).expect("Couldn't patch Steam chunk");
+        match get_context() {
+            Some(link) => reboot(link),
+            None => println!("Can't get Steam context"),
+        };
     }
 
+    // Watch for changes in the chunk.
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
         match res {
             Ok(event) => handle_event(event, Arc::clone(&path_to_watch), Arc::clone(&steam_pid_clone)),
