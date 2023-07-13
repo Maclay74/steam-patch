@@ -227,7 +227,10 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     // Watch for changes in the chunk.
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
         match res {
-            Ok(_) => on_chunk_change(),
+            Ok(e) => {
+                println!("Event {:?}", e.kind);
+                on_chunk_change()
+            },
             Err(e) => println!("watch error: {:?}", e),
         }
     }).unwrap();
