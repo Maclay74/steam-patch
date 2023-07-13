@@ -228,6 +228,9 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
         match res {
             Ok(e) => {
+
+                // TODO Steam removes file and adds a new one.
+                // Need to check the
                 println!("Event {:?}", e.kind);
                 on_chunk_change()
             },
@@ -235,7 +238,7 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         }
     }).unwrap();
 
-    watcher.watch(&steam_chunk_path, RecursiveMode::Recursive).unwrap();
+    watcher.watch(Path::new("/home/gamer/.local/Steam/steamui"), RecursiveMode::NonRecursive).unwrap();
 
     Ok(watcher)
 }
