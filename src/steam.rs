@@ -234,19 +234,20 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
                         if let Some(path) = e.paths.get(0) {
                             if let Some(file_name) = path.file_name() {
                                 if file_name.to_string_lossy().contains("chunk") {
-                                    println!("Event {:?}", e.kind);
-                                    on_chunk_change()
+                                    println!("Steam patched itself! {:?}", e.kind);
+                                    match get_context() {
+                                        Some(link) => {
+                                            on_chunk_change();
+                                            reboot(link)
+                                        },
+                                        None => println!("Can't get Steam context")
+                                    }
                                 }
                             }
                         }
                     },
                     _ => {},
                 }
-
-                // TODO Steam removes file and adds a new one.
-                // Check last pipeline, it now watch the folder
-                // Check events
-                //on_chunk_change()
             },
             Err(e) => println!("watch error: {:?}", e),
         }
