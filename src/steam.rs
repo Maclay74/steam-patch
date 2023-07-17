@@ -230,7 +230,8 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
             Ok(e) => {
 
                 // TODO Steam removes file and adds a new one.
-                // Need to check the
+                // Check last pipeline, it now watch the folder
+                // Check events
                 println!("Event {:?}", e.kind);
                 on_chunk_change()
             },
@@ -238,7 +239,7 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         }
     }).unwrap();
 
-    watcher.watch(Path::new("/home/gamer/.local/Steam/steamui"), RecursiveMode::NonRecursive).unwrap();
+    watcher.watch(Path::new("/home/gamer/.local/share/Steam/steamui"), RecursiveMode::NonRecursive).unwrap();
 
     Ok(watcher)
 }
