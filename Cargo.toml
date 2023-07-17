@@ -1,19 +1,24 @@
 [package]
-name = "ally-steam-patch"
-version = "0.1.0"
+name = "steam-patch"
+version = "0.2.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-actix-web = "4.0.1"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = "1.0.81"
+actix-web = { features = ["macros"], default-features = false, version = "4.0.1" }
+reqwest = { version = "0.11", features = ["blocking", "json"], default-features = false }
+tokio = { version = "1", default-features = false }
+serde = { version = "1.0", default-features = false, features=["derive"] }
+serde_json = { default-features = false, version = "1.0.81" }
 tungstenite = "0.19.0"
 dirs = "5.0.1"
 actix-cors = "0.6.4"
-notify = { version = "6.0.1", features = ["serde"] }
-futures = "0.3"
-sysinfo = "0.29.4"
+notify = { version = "6.0.1", default-features = false }
+futures = { default-features = false, version = "0.3" }
+sysinfo = { default-features = false, version = "0.29.4" }
+
+[profile.release]
+opt-level = 'z'     # Optimize for size
+lto = true          # Enable link-time optimization
+codegen-units = 1   # Reduce number of codegen units to increase optimizations
+panic = 'abort'     # Abort on panic
+strip = true        # Strip symbols from binary*

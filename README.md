@@ -1,18 +1,18 @@
-# Ally Steam Patches
+# Steam Patch
 
-Ally Steam Patches is a tool designed to enhance your Steam experience by applying patches to the Steam client.
+Steam Patch is a tool designed to enhance your Steam experience by applying patches to the Steam client.
 
 ## Installation
 
-To install Ally Steam Patches, run next command in your terminal
+To install Steam Patch, run next command in your terminal
 
    ```bash
-   curl -L https://github.com/Maclay74/ally-steam-patches/releases/latest/download/install.sh | sh
+   curl -L https://github.com/Maclay74/steam-patch/releases/latest/download/install.sh | sh
    ```
 
 To uninstall:
    ```bash
-   curl -L https://github.com/Maclay74/ally-steam-patches/releases/latest/download/uninstall.sh | sh
+   curl -L https://github.com/Maclay74/steam-patch/releases/latest/download/uninstall.sh | sh
    ```
 
 This script will add a new service to `systemctl` and apply the necessary patches to your Steam client. The patches will also be automatically applied every time you restart your system.
