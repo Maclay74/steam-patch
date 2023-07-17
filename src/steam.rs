@@ -229,12 +229,18 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         match res {
             Ok(e) => {
 
-                if let Some(path) = e.paths.get(0) {
-                    if let Some(file_name) = path.file_name() {
-                        if file_name.to_string_lossy().contains("chunk") {
-                            println!("Event {:?}", e.kind);
+                match e.kind {
+                    notify::EventKind::Remove(_) => {
+                        if let Some(path) = e.paths.get(0) {
+                            if let Some(file_name) = path.file_name() {
+                                if file_name.to_string_lossy().contains("chunk") {
+                                    println!("Event {:?}", e.kind);
+                                    on_chunk_change()
+                                }
+                            }
                         }
-                    }
+                    },
+                    _ => {},
                 }
 
                 // TODO Steam removes file and adds a new one.
