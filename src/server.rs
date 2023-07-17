@@ -2,19 +2,18 @@ use actix_web::{App, web, post, Result, HttpServer, HttpResponse};
 use std::thread;
 use serde::Deserialize;
 use actix_cors::Cors;
-
-mod utils;
+use super::devices::{create_device};
 
 #[allow(dead_code)]
 #[derive(Deserialize)]
-struct SettingsRequest {
-    global: Option<GlobalConfig>,
-    per_app: Option<PerAppConfig>,
+pub struct SettingsRequest {
+    pub global: Option<GlobalConfig>,
+    pub per_app: Option<PerAppConfig>,
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize)]
-struct GlobalConfig {
+pub struct GlobalConfig {
     debug_force_hdr_support: Option<bool>,
     diagnostic_update_rate: Option<i32>,
     force_hdr_10pq_output_debug: Option<bool>,
@@ -31,7 +30,7 @@ struct GlobalConfig {
 
 #[allow(dead_code)]
 #[derive(Deserialize)]
-struct PerAppConfig {
+pub struct PerAppConfig {
     cpu_governor: Option<i32>,
     cpu_governor_manual_mhz: Option<i32>,
     display_external_refresh_manual_hz: Option<i32>,
@@ -51,20 +50,17 @@ struct PerAppConfig {
     nis_sharpness: Option<i32>,
     split_scaling_filter: Option<i32>,
     split_scaling_scaler: Option<i32>,
-    tdp_limit: Option<i32>,
+    pub tdp_limit: Option<i8>,
     use_dynamic_refresh_rate_in_steam: Option<bool>,
 }
 
 #[post("/update_settings")]
 async fn update_settings(settings: web::Json<SettingsRequest>) -> Result<HttpResponse> {
-    if let Some(per_app) = &settings.per_app {
 
-        // TDP changes
-        if let Some(tdp) = per_app.tdp_limit {
-            utils::set_tdp(tdp)
-                .map_err(|err| actix_web::error::ErrorBadRequest(err))?;
-        }
-    }
+    let device = create_device("Ally").unwrap();
+    device.update_settings(settings.into_inner()); // I need to pass here settings but as
+
+
     Ok(HttpResponse::NoContent().finish())
 }
 

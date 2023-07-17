@@ -1,5 +1,7 @@
 mod server;
 mod steam;
+mod devices;
+mod utils;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
