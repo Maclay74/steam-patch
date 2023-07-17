@@ -229,11 +229,18 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         match res {
             Ok(e) => {
 
+                if let Some(path) = e.paths.get(0) {
+                    if let Some(file_name) = path.file_name() {
+                        if file_name.to_string_lossy().contains("chunk") {
+                            println!("Event {:?}", e.kind);
+                        }
+                    }
+                }
+
                 // TODO Steam removes file and adds a new one.
                 // Check last pipeline, it now watch the folder
                 // Check events
-                println!("Event {:?}", e.kind);
-                on_chunk_change()
+                //on_chunk_change()
             },
             Err(e) => println!("watch error: {:?}", e),
         }
