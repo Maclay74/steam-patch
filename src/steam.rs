@@ -237,8 +237,10 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
                                     println!("Steam patched itself! {:?}", e.kind);
                                     match get_context() {
                                         Some(link) => {
-                                            on_chunk_change();
-                                            reboot(link)
+                                            match apply_patches(&steam_chunk_path) {
+                                                Ok(_) => reboot(link),
+                                                Err(err) => println!("Failed to apply patches: {:?}", err)
+                                            };
                                         },
                                         None => println!("Can't get Steam context")
                                     }
