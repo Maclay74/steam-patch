@@ -41,7 +41,7 @@ fn get_context() -> Option<String> {
                     Err(_) => println!("Failed to deserialize response!")
                 }
             }
-            Err(_) => println!("Failed to fetch Steam data!")
+            Err(_) => {}
         }
 
         thread::sleep(Duration::from_millis(50));
@@ -80,19 +80,6 @@ fn apply_patches(steamChunkPath: &PathBuf) -> Result<(), Error> {
     fs::write(&steamChunkPath, content)?;
 
     Ok(())
-}
-
-fn is_chunk_patched(steamChunkPath: &PathBuf) -> bool  {
-    let content = fs::read_to_string(&steamChunkPath).unwrap();
-    let patches = patches::get_patches();
-
-    for patch in patches {
-        if !content.contains(&patch.replacement_text) {
-            return false;
-        }
-    }
-
-    true
 }
 
 fn get_username() -> String {
@@ -179,27 +166,6 @@ fn is_steam_running() -> bool {
     false
 }
 
-fn on_chunk_change() {
-    let steam_chunk_path = match get_chunk() {
-        Ok(chunk) => chunk,
-        Err(err) => {
-            println!("Failed to get steam chunk: {:?}", err);
-            return ;
-        }
-    };
-
-    if is_chunk_patched(&steam_chunk_path) {
-        return
-    }
-
-    println!("File has changed!: {:?}", steam_chunk_path);
-
-    match apply_patches(&steam_chunk_path) {
-        Ok(_) => println!("Patches applied successfully"),
-        Err(err) => println!("Failed to apply patches: {:?}", err)
-    };
-}
-
 pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
 
     // Get Steam chunk link
@@ -223,39 +189,40 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         }
         Err(_) => println!("Couldn't patch chunk")
     }
-
+    
     // Watch for changes in the chunk.
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
-        match res {
-            Ok(e) => {
+        let event = match res {
+            Ok(event) => event,
+            Err(e) => {
+                println!("watch error: {:?}", e);
+                return;
+            }
+        };
 
-                match e.kind {
-                    notify::EventKind::Remove(_) => {
-                        if let Some(path) = e.paths.get(0) {
-                            if let Some(file_name) = path.file_name() {
-                                if file_name.to_string_lossy().contains("chunk") {
-                                    println!("Steam patched itself! {:?}", e.kind);
-                                    match get_context() {
-                                        Some(link) => {
-                                            match apply_patches(&steam_chunk_path) {
-                                                Ok(_) => reboot(link),
-                                                Err(err) => println!("Failed to apply patches: {:?}", err)
-                                            };
-                                        },
-                                        None => println!("Can't get Steam context")
-                                    }
-                                }
+        if let notify::EventKind::Remove(_) = event.kind {
+            if let Some(path) = event.paths.get(0) {
+                if let Some(file_name) = path.file_name() {
+                    if file_name.to_string_lossy().contains("chunk") {
+                        println!("Steam patched itself! {:?}", event.kind);
+                        if let Some(link) = get_context() {
+                            match get_chunk() {
+                                Ok(chunk) => {
+                                    apply_patches(&chunk).expect("Failed to apply patches");
+                                    reboot(link);
+                                },
+                                Err(err) => println!("Failed to get steam chunk: {:?}", err),
                             }
+                        } else {
+                            println!("Can't get Steam context");
                         }
-                    },
-                    _ => {},
+                    }
                 }
-            },
-            Err(e) => println!("watch error: {:?}", e),
+            }
         }
     }).unwrap();
 
-    watcher.watch(Path::new("/home/gamer/.local/share/Steam/steamui"), RecursiveMode::NonRecursive).unwrap();
+    watcher.watch(&steam_chunk_path, RecursiveMode::NonRecursive).unwrap();
 
     Ok(watcher)
 }
