@@ -2,6 +2,7 @@ use super::Device;
 use crate::server::SettingsRequest;
 use crate::utils;
 use std::fs;
+use std::thread;
 
 pub struct DeviceAlly;
 
@@ -35,9 +36,11 @@ impl Device for DeviceAlly {
             _ => 2, // turbo
         };
 
-        match fs::write("/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy", thermal_policy.to_string()) {
-            Ok(_) => println!("Set thermal policy successfully!"),
-            Err(_) => println!("Couldn't change thermal policy")
-        }
+        let _ = thread::spawn(move || {
+            match fs::write("/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy", thermal_policy.to_string()) {
+                Ok(_) => println!("Set thermal policy successfully!"),
+                Err(_) => println!("Couldn't change thermal policy")
+            }
+        });
     }
 }
