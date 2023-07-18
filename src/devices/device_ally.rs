@@ -3,6 +3,7 @@ use crate::server::SettingsRequest;
 use crate::utils;
 use std::fs;
 use std::thread;
+use std::time::{Duration};
 
 pub struct DeviceAlly;
 
@@ -36,11 +37,15 @@ impl Device for DeviceAlly {
             _ => 2, // turbo
         };
 
-        /*let _ = thread::spawn(move || {
-            match fs::write("/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy", thermal_policy.to_string()) {
-                Ok(_) => println!("Set thermal policy successfully!"),
-                Err(_) => println!("Couldn't change thermal policy")
+        let file_path = "/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy";
+        let _ = thread::spawn(move || {
+            match fs::read_to_string(file_path) {
+                Ok(content) if content.trim() != thermal_policy.to_string() => {
+                    thread::sleep(Duration::from_millis(50));
+                    fs::write(file_path, thermal_policy.to_string()).expect("Couldn't change thermal policy")
+                }
+                _ => {}
             }
-        });*/
+        });
     }
 }
