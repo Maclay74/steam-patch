@@ -23,7 +23,7 @@ pub fn create_device() -> Option<Box<dyn Device>> {
     println!("{}", get_device_name());
 
     match product_name.trim().as_ref() {
-        "ROG Ally" => Some(Box::new(DeviceAlly)),
+        "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => Some(Box::new(DeviceAlly)),
         _ => None,
     }
 }
