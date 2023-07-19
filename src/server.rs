@@ -57,10 +57,11 @@ pub struct PerAppConfig {
 #[post("/update_settings")]
 async fn update_settings(settings: web::Json<SettingsRequest>) -> Result<HttpResponse> {
 
-    let device = create_device("Ally").unwrap();
-    device.update_settings(settings.into_inner()); // I need to pass here settings but as
+    if let Some(device) = create_device() {
+        device.update_settings(settings.into_inner());
+    }
 
-
+     // I need to pass here settings but as
     Ok(HttpResponse::NoContent().finish())
 }
 

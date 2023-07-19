@@ -11,8 +11,7 @@ use std::env;
 use std::time::{Duration, Instant};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use sysinfo::{ProcessExt, SystemExt};
-
-mod patches;
+use crate::devices::create_device;
 
 #[derive(Deserialize)] // Enable deserialization for the Tab struct
 struct Tab {
@@ -69,15 +68,17 @@ fn reboot(link: String) {
 
 fn apply_patches(steamChunkPath: &PathBuf) -> Result<(), Error> {
     let mut content = fs::read_to_string(&steamChunkPath)?;
-    let patches = patches::get_patches();
 
-    for patch in patches {
-        let text_to_find = &patch.text_to_find;
-        let replacement_text = &patch.replacement_text;
-        content = content.replace(text_to_find, replacement_text);
+    if let Some(device) = create_device() {
+        let patches = device.get_patches();
+        for patch in patches {
+            let text_to_find = &patch.text_to_find;
+            let replacement_text = &patch.replacement_text;
+            content = content.replace(text_to_find, replacement_text);
+        }
+
+        fs::write(&steamChunkPath, content)?;
     }
-
-    fs::write(&steamChunkPath, content)?;
 
     Ok(())
 }
