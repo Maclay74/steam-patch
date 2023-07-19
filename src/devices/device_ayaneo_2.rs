@@ -12,11 +12,15 @@ impl Device for DeviceAyaneo2 {
             // TDP changes
             if let Some(tdp) = per_app.tdp_limit {
                 self.set_tdp(tdp);
+            } else {
+                println!("Nothing to update")
             }
         }
     }
 
     fn set_tdp(&self, tdp: i8) -> () {
+
+        println!("Trying to set TDP");
 
         // Update TDP
         let target_tdp = tdp as i32 * 1000;
