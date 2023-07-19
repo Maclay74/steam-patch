@@ -19,12 +19,12 @@ pub struct GlobalConfig {
     force_hdr_10pq_output_debug: Option<bool>,
     force_hdr_wide_gammut_for_sdr: Option<bool>,
     graphics_profiling_service_state: Option<i64>,
-    hdr_on_sdr_tonemap_operator: Option<f64>,
+    hdr_on_sdr_tonemap_operator: Option<i64>,
     is_advanced_settings_enabled: Option<bool>,
     is_show_perf_overlay_over_steam_enabled: Option<bool>,
     perf_overlay_level: Option<i64>,
     perf_overlay_service_state: Option<i64>,
-    sdr_to_hdr_brightness: Option<i64>,
+    sdr_to_hdr_brightness: Option<f64>,
     system_trace_service_state: Option<i64>,
 }
 
