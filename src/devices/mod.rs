@@ -1,5 +1,6 @@
 pub mod device_ally;
 use std::fs;
+use regex::Regex;
 use device_ally::DeviceAlly;
 use crate::server::SettingsRequest;
 
