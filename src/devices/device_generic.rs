@@ -3,24 +3,28 @@ use crate::server::SettingsRequest;
 use crate::utils;
 use crate::devices::Patch;
 
-pub struct DeviceAyaneo2;
+pub struct DeviceGeneric {
+    max_tdp: i8,
+}
 
-impl Device for DeviceAyaneo2 {
+impl DeviceGeneric {
+    pub fn new(max_tdp: i8) -> DeviceGeneric {
+        DeviceGeneric { max_tdp }
+    }
+}
+
+impl Device for DeviceGeneric {
     fn update_settings(&self, request: SettingsRequest) {
         if let Some(per_app) = &request.per_app {
 
             // TDP changes
             if let Some(tdp) = per_app.tdp_limit {
                 self.set_tdp(tdp);
-            } else {
-                println!("Nothing to update")
             }
         }
     }
 
     fn set_tdp(&self, tdp: i8) -> () {
-
-        println!("Trying to set TDP");
 
         // Update TDP
         let target_tdp = tdp as i32 * 1000;
@@ -38,7 +42,7 @@ impl Device for DeviceAyaneo2 {
             // Max TDP = 28
             Patch {
                 text_to_find: "return[n,t,r,e=>i((()=>p.Get().SetTDPLimit(e)))".to_string(),
-                replacement_text: "return[n,t,28,e=>i((()=>p.Get().SetTDPLimit(e)))".to_string(),
+                replacement_text: format!("return[n,t,{:?},e=>i((()=>p.Get().SetTDPLimit(e)))", self.max_tdp).to_string(),
             },
             // Listen to TDP changes
             Patch {
