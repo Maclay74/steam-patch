@@ -16,13 +16,9 @@ pub trait Device {
 }
 
 pub fn create_device() -> Option<Box<dyn Device>> {
-    let product_name_path = "/sys/devices/virtual/dmi/id/product_family";
-    let product_name = fs::read_to_string(product_name_path)
-        .expect("Couldn't read product_family");
+    let device_name = get_device_name();
 
-    println!("{}", get_device_name());
-
-    match product_name.trim().as_ref() {
+    match device_name.trim().as_ref() {
         "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => Some(Box::new(DeviceAlly)),
         _ => None,
     }
