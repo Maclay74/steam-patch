@@ -56,9 +56,6 @@ pub struct PerAppConfig {
 
 #[post("/update_settings")]
 async fn update_settings(settings: web::Json<SettingsRequest>) -> Result<HttpResponse> {
-
-    println!("Request to update settings");
-
     if let Some(device) = create_device() {
         device.update_settings(settings.into_inner());
     }

@@ -21,11 +21,10 @@ pub trait Device {
 pub fn create_device() -> Option<Box<dyn Device>> {
     let device_name = get_device_name();
 
-    println!("Actual device name: {:?}", device_name);
-
     match device_name.trim().as_ref() {
         "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => Some(Box::new(DeviceAlly::new())),
         "AMD Ryzen 7 6800U with Radeon Graphics AYANEO AYANEO 2" => Some(Box::new(DeviceGeneric::new(28))),
+        "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK 1S" => Some(Box::new(DeviceGeneric::new(28))),
         "AMD Ryzen 7 6800U with Radeon Graphics GPD G1619-04" => Some(Box::new(DeviceGeneric::new(28))),
         _ => Some(Box::new(DeviceGeneric::new(18))),
     }
