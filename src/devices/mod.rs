@@ -22,11 +22,21 @@ pub fn create_device() -> Option<Box<dyn Device>> {
     let device_name = get_device_name();
 
     match device_name.trim().as_ref() {
+
+        // Asus Rog Ally
         "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => Some(Box::new(DeviceAlly::new())),
+
+        // Ayaneo 2
         "AMD Ryzen 7 6800U with Radeon Graphics AYANEO AYANEO 2" => Some(Box::new(DeviceGeneric::new(28))),
+
+        // Ayaneo Geek 1S
         "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK 1S" => Some(Box::new(DeviceGeneric::new(28))),
+
+        // GPD WM2
         "AMD Ryzen 7 6800U with Radeon Graphics GPD G1619-04" => Some(Box::new(DeviceGeneric::new(28))),
-        _ => Some(Box::new(DeviceGeneric::new(18))),
+
+        // Any other device
+        _ => Some(Box::new(DeviceGeneric::new(25))),
     }
 }
 
