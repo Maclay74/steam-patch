@@ -49,7 +49,11 @@ impl Device for DeviceGeneric {
                 text_to_find: "const t=c.Hm.deserializeBinary(e).toObject();Object.keys(t)".to_string(),
                 replacement_text: "const t=c.Hm.deserializeBinary(e).toObject(); console.log(t); fetch(`http://localhost:1338/update_settings`, { method: 'POST',  headers: {'Content-Type': 'application/json'}, body: JSON.stringify(t.settings)}); Object.keys(t)".to_string(),
             },
-            // Add more patches as needed
+            // Replace Xbox menu button with Steam one
+            Patch {
+                text_to_find: "case 4:case 31: return l.createElement".to_string(),
+                replacement_text: "return[n,t,{:?},e=>i((()=>p.Get().SetTDPLimit(e)))".to_string(),
+            },
         ]
     }
 }
