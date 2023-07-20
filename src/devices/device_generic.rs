@@ -51,8 +51,8 @@ impl Device for DeviceGeneric {
             },
             // Replace Xbox menu button with Steam one
             Patch {
-                text_to_find: "case 4:case 31: return l.createElement".to_string(),
-                replacement_text: "return[n,t,{:?},e=>i((()=>p.Get().SetTDPLimit(e)))".to_string(),
+                text_to_find: "case 4:return l.createElement".to_string(),
+                replacement_text: "case 4:case 31: return l.createElement".to_string(),
             },
         ]
     }
