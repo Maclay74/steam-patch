@@ -27,7 +27,7 @@ src="https://github.com/Maclay74/steam-patch/assets/5504685/c76f7637-9f82-4786-b
 
 ## 🎯 Supported Devices
 
-Here is a list of supported devices for the Steam Patch. Please replace the dummy values with actual ones when available:
+Here is a list of supported devices for the Steam Patch.
 
 - Asus Rog Ally (30 TDP, changes thermal policy)
 - Ayaneo 2, Geek 1S (28 TDP) 
