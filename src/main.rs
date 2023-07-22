@@ -24,7 +24,7 @@ async fn main() -> std::io::Result<()> {
         thread.join().unwrap();
     }
 
-    let device = uinput::default().unwrap()
+    let mut device = uinput::default().unwrap()
         .name("test").unwrap()
         .event(uinput::event::controller::Controller::All).unwrap()
         .create().unwrap();
