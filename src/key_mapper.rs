@@ -27,8 +27,8 @@ pub fn start_mapper() -> Option<thread::JoinHandle<()>> {
             Some(thread::spawn(move || {
                 loop {
                     for event in device.fetch_events().unwrap() {
-                        if let evdev::InputEventKind::Key(_) = event.kind {
-                            println!("{:?}", event);
+                        if let evdev::InputEventKind::Key(key) = event.kind {
+                            println!("{:?}", key);
                         }
                     }
                 }
