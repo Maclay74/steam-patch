@@ -1,6 +1,6 @@
 #![allow(non_snake_case)] // Allow non-snake_case identifiers
 
-use reqwest::blocking::get;
+use reqwest::blocking::Client;
 use std::{fs, thread};
 use serde::Deserialize;
 use tungstenite::connect;
@@ -24,14 +24,16 @@ struct Tab {
 pub fn get_context() -> Option<String> {
     println!("Getting Steam...");
 
+    let client = Client::new();
     let start_time = Instant::now();
+
     loop {
         if start_time.elapsed() > Duration::from_secs(60) {
             println!("Timeout while trying to fetch Steam data!");
             return None;
         }
 
-        match get("http://localhost:8080/json") {
+        match client.get("http://localhost:8080/json").send() {
             Ok(response) => {
                 match response.json::<Vec<Tab>>() {
                     Ok(tabs) => {
