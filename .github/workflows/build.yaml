@@ -49,7 +49,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target x86_64-unknown-linux-gnu
+          args: --target x86_64-unknown-linux-gnu
 
       - name: ✂️ Strip Debug Symbols
         run: strip -s target/x86_64-unknown-linux-gnu/release/steam-patch

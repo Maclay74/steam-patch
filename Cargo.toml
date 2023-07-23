@@ -19,8 +19,9 @@ regex = "1"
 evdev = "0.12.1"
 
 [profile.release]
-opt-level = 'z'     # Optimize for size
-lto = true          # Enable link-time optimization
-codegen-units = 1   # Reduce number of codegen units to increase optimizations
-panic = 'abort'     # Abort on panic
-strip = true        # Strip symbols from binary*
+opt-level = 0     # Optimize for size
+debug = true
+# lto = true          # Enable link-time optimization
+# codegen-units = 1   # Reduce number of codegen units to increase optimizations
+# panic = 'abort'     # Abort on panic
+# strip = true        # Strip symbols from binary*
