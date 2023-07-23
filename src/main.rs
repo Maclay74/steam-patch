@@ -10,11 +10,11 @@ async fn main() -> std::io::Result<()> {
 
     let mut threads = Vec::new();
 
-    /*if let Some(device) = create_device() {
+    if let Some(device) = create_device() {
         if let Some(mapper_thread) = device.get_key_mapper() {
             threads.push(mapper_thread);
         }
-    }*/
+    }
 
     threads.push(server::start_server());
 
