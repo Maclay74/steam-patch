@@ -124,18 +124,8 @@ fn is_steam_running() -> bool {
 
 pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
 
-  /*  // Get Steam chunk link
-    let steam_chunk_path = match get_patch_file(PatchFile::Chunk) {
-        Ok(chunk) => chunk,
-        Err(err) => {
-            println!("Failed to get steam chunk: {:?}", err);
-            return Err(());
-        }
-    };
-*/
     match apply_patches() {
         Ok(_) =>  {
-            //*is_chunk_patched_clone.lock().unwrap() = true;
             if is_steam_running() {
                 match get_context() {
                     Some(link) =>reboot(link),
@@ -164,13 +154,6 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
                         if let Some(link) = get_context() {
                             apply_patches().expect("Failed to apply patches");
                             reboot(link);
-                            /*match get_patch_file(PatchFile::Chunk) {
-                                Ok(chunk) => {
-                                    apply_patches(&chunk).expect("Failed to apply patches");
-                                    reboot(link);
-                                },
-                                Err(err) => println!("Failed to get steam chunk: {:?}", err),
-                            }*/
                         } else {
                             println!("Can't get Steam context");
                         }
