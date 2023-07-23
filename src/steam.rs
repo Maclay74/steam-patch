@@ -145,7 +145,7 @@ fn is_steam_running() -> bool {
     false
 }
 
-pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
+pub fn patch_steam() {
 
     match apply_patches() {
         Ok(_) =>  {
@@ -158,6 +158,8 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
         }
         Err(_) => println!("Couldn't patch chunk")
     }
+
+    /*
     
     // Watch for changes in the chunk.
     let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
@@ -189,6 +191,8 @@ pub fn patch_steam() -> Result<RecommendedWatcher, ()> {
     watcher.watch(PatchFile::Chunk.get_file().unwrap().as_path(), RecursiveMode::NonRecursive).unwrap();
 
     Ok(watcher)
+
+     */
 }
 
 impl PatchFile {
