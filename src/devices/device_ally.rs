@@ -26,8 +26,8 @@ impl Device for DeviceAlly {
     fn get_patches(&self) -> Vec<Patch> {
         let mut patches = self.device.get_patches();
         patches.push(Patch {
-            text_to_find: String::from("return a.EGamepadButton.DIR_RIGHT}return a.EGamepadButton.INVALID"),
-            replacement_text: String::from("return a.EGamepadButton.DIR_RIGHT; default: if (e.keyCode === 0) return a.EGamepadButton.STEAM_QUICK_MENU; if (e.keyCode === 127) return a.EGamepadButton.STEAM_GUIDE;  }return a.EGamepadButton.INVALID"),
+            text_to_find: String::from("this.m_rgControllers=new Map,\"undefined\"!=typeof SteamClient&&(this.m_hUnregisterControllerDigitalInput"),
+            replacement_text: String::from("this.m_rgControllers=new Map; window.HandleSystemKeyEvents = this.HandleSystemKeyEvents; \"undefined\"!=typeof SteamClient&&(this.m_hUnregisterControllerDigitalInput"),
             destination: PatchFile::Library,
         });
         patches
