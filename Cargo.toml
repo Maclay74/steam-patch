@@ -4,17 +4,17 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-actix-web = { features = ["macros"], default-features = false, version = "4.0.1" }
-reqwest = { version = "0.11", features = ["blocking", "json"], default-features = false }
-tokio = { version = "1", default-features = false }
-serde = { version = "1.0", default-features = false, features=["derive"] }
-serde_json = { default-features = false, version = "1.0.81" }
+actix-web = "4.3.1"
+reqwest = { version = "0.11.18", features = ["blocking", "json"] }
+tokio = "1.29.1"
+serde = { version = "1.0.169", features=["derive"] }
+serde_json = { version = "1.0.100" }
 tungstenite = "0.19.0"
 dirs = "5.0.1"
 actix-cors = "0.6.4"
-notify = { version = "6.0.1", default-features = false }
-futures = { default-features = false, version = "0.3" }
-sysinfo = { default-features = false, version = "0.29.4" }
+notify = { version = "6.0.1" }
+futures =  "0.3.28"
+sysinfo = "0.29.4"
 regex = "1"
 evdev = "0.12.1"
 
