@@ -4,19 +4,15 @@ mod devices;
 mod utils;
 
 pub fn pick_device() -> Option<evdev::Device> {
-    let target_name = "Asus Keyboard";
-    let target_vendor_id = 0xb05;
-    let target_product_id = 0x1abe;
+    let target_vendor_id = 0xb05u16;
+    let target_product_id = 0x1abeu16;
 
     let devices = evdev::enumerate();
     for (_, device) in devices {
-        if let Some(name) = device.name() {
-            if name == target_name
-                && device.vendor_id() == target_vendor_id
-                && device.product_id() == target_product_id
-            {
-                return Some(device);
-            }
+        let input_id = device.input_id();
+
+        if input_id.vendor() == target_vendor_id && input_id.product() == target_product_id {
+            return Some(device);
         }
     }
 
