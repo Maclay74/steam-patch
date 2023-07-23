@@ -37,10 +37,6 @@ async fn main() -> std::io::Result<()> {
         },
     };
 
-    for thread in threads {
-        thread.join().unwrap();
-    }
-
     let device_opt = pick_device();
     match device_opt {
         Some(device) => {
@@ -51,6 +47,12 @@ async fn main() -> std::io::Result<()> {
             println!("No device found");
         }
     }
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+
 
     Ok(())
 }
