@@ -29,11 +29,11 @@ pub fn start_mapper() -> Option<thread::JoinHandle<()>> {
                     for event in device.fetch_events().unwrap() {
                         if let evdev::InputEventKind::Key(key) = event.kind() {
 
-                            if key == evdev::Key::KEY_PROG1 {
+                            if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                 println!("Show QAM");
                             }
 
-                            if key == evdev::Key::KEY_F16 {
+                            if key == evdev::Key::KEY_F16 && event.value() == 0 {
                                 println!("Show menu");
                             }
 
