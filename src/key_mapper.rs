@@ -16,13 +16,11 @@ pub fn pick_device() -> Option<evdev::Device> {
     None
 }
 
-
 pub fn start_mapper() -> Option<thread::JoinHandle<()>> {
-
-    let mut device = pick_device();
+    let device = pick_device();
 
     match device {
-        Some(ref mut device) => {
+        Some(mut device) => {
             // Use the device
             println!("Device found: {}", device.name().unwrap_or("Unnamed device"));
 
