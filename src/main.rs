@@ -5,10 +5,9 @@ mod steam;
 mod devices;
 mod utils;
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+fn main() -> std::io::Result<()> {
 
-    let mut threads = Vec::new();
+    /*let mut threads = Vec::new();
 
     if let Some(device) = create_device() {
         println!("Device created");
@@ -16,11 +15,11 @@ async fn main() -> std::io::Result<()> {
             println!("Mapper is there");
             threads.push(mapper_thread);
         }
-    }
+    }*/
 
-    threads.push(server::start_server());
+    //threads.push(server::start_server());
 
-    steam::patch_steam();
+    //steam::patch_steam();
 
    /*let _watcher = match steam::patch_steam() {
         Ok(watcher) => watcher,
@@ -30,8 +29,12 @@ async fn main() -> std::io::Result<()> {
         },
     };*/
 
-    for thread in threads {
+    /*for thread in threads {
         thread.join().unwrap();
+    }*/
+
+    loop {
+        
     }
 
     Ok(())
