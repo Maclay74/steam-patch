@@ -98,13 +98,12 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
                         if let evdev::InputEventKind::Key(key) = event.kind() {
                             if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                 println!("Show QAM");
-                                match &*context_clone {
-                                    Some(ctx) => {
-                                        ctx.clone();
-                                        execute(context_str, String::from("window.HandleSystemKeyEvents({eKey: 1})"))
-                                    }
-                                    None => String::new(),
+                                let context_str = match &*context_clone {
+                                    Some(ctx) => Some(ctx.clone().to_string()),
+                                    None => None,
                                 };
+
+                                execute(context_str.unwrap(), String::from("window.HandleSystemKeyEvents({eKey: 1})"));
                             }
 
                             if key == evdev::Key::KEY_F16 && event.value() == 0 {
