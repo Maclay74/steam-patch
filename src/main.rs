@@ -6,7 +6,6 @@ mod devices;
 mod utils;
 
 fn main() -> std::io::Result<()> {
-
     let mut threads = Vec::new();
 
     /*if let Some(device) = create_device() {
@@ -21,17 +20,17 @@ fn main() -> std::io::Result<()> {
 
     //steam::patch_steam();
 
-   /*let _watcher = match steam::patch_steam() {
-        Ok(watcher) => watcher,
-        Err(_) => {
-            println!("Error setting up file watcher. Exiting...");
-            std::process::exit(1);
-        },
-    };*/
+    /*let _watcher = match steam::patch_steam() {
+         Ok(watcher) => watcher,
+         Err(_) => {
+             println!("Error setting up file watcher. Exiting...");
+             std::process::exit(1);
+         },
+     };*/
 
-    /*for thread in threads {
+    for thread in threads {
         thread.join().unwrap();
-    }*/
+    }
 
     Ok(())
 }
