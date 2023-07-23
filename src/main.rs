@@ -1,16 +1,19 @@
+use crate::devices::create_device;
+
 mod server;
 mod steam;
 mod devices;
 mod utils;
-mod key_mapper;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
     let mut threads = Vec::new();
 
-    if let Some(handle) = key_mapper::start_mapper() {
-        threads.push(handle);
+    if let Some(device) = create_device() {
+        if let Some(mapper_thread) = device.get_key_mapper() {
+            threads.push(mapper_thread);
+        }
     }
 
     /*threads.push(server::start_server());

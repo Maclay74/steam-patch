@@ -2,6 +2,7 @@ use super::Device;
 use crate::server::SettingsRequest;
 use std::fs;
 use std::thread;
+use std::thread::JoinHandle;
 use std::time::{Duration};
 use crate::devices::device_generic::DeviceGeneric;
 use crate::devices::{Patch, PatchFile};
@@ -53,5 +54,59 @@ impl Device for DeviceAlly {
                 _ => {}
             }
         });
+    }
+
+    fn get_key_mapper(&self) -> Option<JoinHandle<()>> {
+        start_mapper()
+    }
+}
+
+
+pub fn pick_device() -> Option<evdev::Device> {
+    let target_vendor_id = 0xb05u16;
+    let target_product_id = 0x1abeu16;
+
+    let devices = evdev::enumerate();
+    for (_, device) in devices {
+        let input_id = device.input_id();
+
+        if input_id.vendor() == target_vendor_id && input_id.product() == target_product_id {
+            return Some(device);
+        }
+    }
+
+    None
+}
+
+pub fn start_mapper() -> Option<JoinHandle<()>> {
+    let device = pick_device();
+
+    match device {
+        Some(mut device) => {
+            // Use the device
+            println!("Device found: {}", device.name().unwrap_or("Unnamed device"));
+
+            Some(thread::spawn(move || {
+                loop {
+                    for event in device.fetch_events().unwrap() {
+                        if let evdev::InputEventKind::Key(key) = event.kind() {
+
+                            if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
+                                println!("Show QAM");
+                            }
+
+                            if key == evdev::Key::KEY_F16 && event.value() == 0 {
+                                println!("Show menu");
+                            }
+
+                        }
+                    }
+                }
+            }))
+        }
+        None => {
+            println!("No device found");
+            None
+        }
     }
 }

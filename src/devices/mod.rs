@@ -1,7 +1,7 @@
 pub mod device_ally;
 pub mod device_generic;
 
-use std::fs;
+use std::{fs, thread};
 use regex::Regex;
 use device_ally::DeviceAlly;
 use device_generic::DeviceGeneric;
@@ -31,6 +31,7 @@ pub trait Device {
     fn update_settings(&self, request: SettingsRequest);
     fn set_tdp(&self, tdp: i8);
     fn get_patches(&self) -> Vec<Patch>;
+    fn get_key_mapper(&self) -> Option<thread::JoinHandle<()>>;
 }
 
 pub fn create_device() -> Option<Box<dyn Device>> {

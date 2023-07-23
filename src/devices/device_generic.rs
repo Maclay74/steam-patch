@@ -1,3 +1,4 @@
+use std::thread::JoinHandle;
 use super::Device;
 use crate::server::SettingsRequest;
 use crate::utils;
@@ -58,5 +59,9 @@ impl Device for DeviceGeneric {
                 destination: PatchFile::Chunk,
             },
         ]
+    }
+
+    fn get_key_mapper(&self) -> Option<JoinHandle<()>> {
+        None
     }
 }
