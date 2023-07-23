@@ -20,9 +20,6 @@ jobs:
       - name: 📚 Checkout Code
         uses: actions/checkout@v2
 
-      - name: 🧰 Install libudev dev package
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-
       - name: 🛠️ Set Script Permissions
         run: |
           chmod +x ./install.sh

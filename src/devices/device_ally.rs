@@ -4,7 +4,7 @@ use std::fs;
 use std::thread;
 use std::time::{Duration};
 use crate::devices::device_generic::DeviceGeneric;
-use crate::devices::Patch;
+use crate::devices::{Patch, PatchFile};
 
 pub struct DeviceAlly {
     device: DeviceGeneric,
@@ -24,7 +24,13 @@ impl Device for DeviceAlly {
     }
 
     fn get_patches(&self) -> Vec<Patch> {
-        self.device.get_patches()
+        let mut patches = self.device.get_patches();
+        patches.push(Patch {
+            text_to_find: String::from("return a.EGamepadButton.DIR_RIGHT}return a.EGamepadButton.INVALID"),
+            replacement_text: String::from("return a.EGamepadButton.DIR_RIGHT; default: if (e.keyCode === 0) return a.EGamepadButton.STEAM_QUICK_MENU; if (e.keyCode === 127) return a.EGamepadButton.STEAM_GUIDE;  }return a.EGamepadButton.INVALID"),
+            destination: PatchFile::Library,
+        });
+        patches
     }
 
     fn set_tdp(&self, tdp: i8) -> () {

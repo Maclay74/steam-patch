@@ -1,7 +1,7 @@
 use super::Device;
 use crate::server::SettingsRequest;
 use crate::utils;
-use crate::devices::Patch;
+use crate::devices::{Patch, PatchFile};
 
 pub struct DeviceGeneric {
     max_tdp: i8,
@@ -43,16 +43,19 @@ impl Device for DeviceGeneric {
             Patch {
                 text_to_find: "return[n,t,r,e=>i((()=>p.Get().SetTDPLimit(e)))".to_string(),
                 replacement_text: format!("return[n,t,{:?},e=>i((()=>p.Get().SetTDPLimit(e)))", self.max_tdp).to_string(),
+                destination: PatchFile::Chunk,
             },
             // Listen to TDP changes
             Patch {
                 text_to_find: "const t=c.Hm.deserializeBinary(e).toObject();Object.keys(t)".to_string(),
                 replacement_text: "const t=c.Hm.deserializeBinary(e).toObject(); console.log(t); fetch(`http://localhost:1338/update_settings`, { method: 'POST',  headers: {'Content-Type': 'application/json'}, body: JSON.stringify(t.settings)}); Object.keys(t)".to_string(),
+                destination: PatchFile::Chunk,
             },
             // Replace Xbox menu button with Steam one
             Patch {
                 text_to_find: "case 4:return l.createElement".to_string(),
                 replacement_text: "case 4:case 31: return l.createElement".to_string(),
+                destination: PatchFile::Chunk,
             },
         ]
     }

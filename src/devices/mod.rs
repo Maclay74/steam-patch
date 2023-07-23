@@ -7,9 +7,24 @@ use device_ally::DeviceAlly;
 use device_generic::DeviceGeneric;
 use crate::server::SettingsRequest;
 
+pub enum PatchFile {
+    Chunk,
+    Library,
+}
+
 pub struct Patch {
     pub text_to_find: String,
     pub replacement_text: String,
+    pub destination: PatchFile,
+}
+
+impl PatchFile {
+    pub fn get_regex(&self) -> &str {
+        match self {
+            PatchFile::Chunk => "^chunk",
+            PatchFile::Library => "^library",
+        }
+    }
 }
 
 pub trait Device {
@@ -54,3 +69,4 @@ fn get_device_name() -> String {
 
     format!("{} {} {}", model, board_vendor, board_name)
 }
+
