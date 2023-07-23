@@ -16,7 +16,7 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    threads.push(server::start_server());
+    //threads.push(server::start_server());
 
     //steam::patch_steam();
 
