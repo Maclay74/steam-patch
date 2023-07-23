@@ -8,6 +8,7 @@ use crate::devices::device_generic::DeviceGeneric;
 use crate::devices::{Patch, PatchFile};
 use crate::steam::{get_context, execute};
 use std::sync::Arc;
+use std::ops::Deref;
 
 pub struct DeviceAlly {
     device: DeviceGeneric,
@@ -98,12 +99,8 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
                         if let evdev::InputEventKind::Key(key) = event.kind() {
                             if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                 println!("Show QAM");
-                                let context_str = match &*context_clone {
-                                    Some(ctx) => Some(ctx.clone().to_string()),
-                                    None => None,
-                                };
-
-                                execute(context_str.unwrap(), String::from("window.HandleSystemKeyEvents({eKey: 1})"));
+                                let context_str = context_clone.deref().clone();
+                                execute(context_str, String::from("window.HandleSystemKeyEvents({eKey: 1})"));
                             }
 
                             if key == evdev::Key::KEY_F16 && event.value() == 0 {
