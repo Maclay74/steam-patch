@@ -9,7 +9,9 @@ async fn main() -> std::io::Result<()> {
 
     let mut threads = Vec::new();
 
-    threads.push(key_mapper::start_mapper());
+    if let Some(handle) = key_mapper::start_mapper() {
+        threads.push(handle);
+    }
 
     /*threads.push(server::start_server());
 

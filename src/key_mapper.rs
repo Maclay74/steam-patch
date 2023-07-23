@@ -17,7 +17,7 @@ pub fn pick_device() -> Option<evdev::Device> {
 }
 
 
-pub fn start_mapper() -> thread::JoinHandle<()> {
+pub fn start_mapper() -> Option<thread::JoinHandle<()>> {
 
     let mut device = pick_device();
 
