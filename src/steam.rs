@@ -21,7 +21,7 @@ struct Tab {
     webSocketDebuggerUrl: String,
 }
 
-fn get_context() -> Option<String> {
+pub fn get_context() -> Option<String> {
     println!("Getting Steam...");
 
     let start_time = Instant::now();
@@ -66,6 +66,25 @@ fn reboot(link: String) {
         Ok(_) => println!("Steam Rebooted"),
         Err(err) => println!("Failed to reboot Steam: {:?}", err)
     }
+}
+
+pub fn execute(link: String, js_code: String) {
+    let (mut socket, _) = match connect(link) {
+        Ok(socket) => socket,
+        Err(_) => {
+            println!("Couldn't reload Steam!");
+            return;
+        }
+    };
+
+    let message = serde_json::json!({
+        "id": 1,
+        "method": "Runtime.evaluate",
+        "params": {
+            "expression": js_code,
+        }
+    });
+    socket.write_message(Message::Text(message.to_string())).expect("TODO: panic message");
 }
 
 fn apply_patches() -> Result<(), Error> {

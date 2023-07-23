@@ -6,6 +6,8 @@ use std::thread::JoinHandle;
 use std::time::{Duration};
 use crate::devices::device_generic::DeviceGeneric;
 use crate::devices::{Patch, PatchFile};
+use crate::steam::{get_context, execute};
+use std::sync::Arc;
 
 pub struct DeviceAlly {
     device: DeviceGeneric,
@@ -84,21 +86,30 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
     match device {
         Some(mut device) => {
             // Use the device
-            println!("Device found: {}", device.name().unwrap_or("Unnamed device"));
+            println!("Ally specific device found: {}", device.name().unwrap_or("Unnamed device"));
 
             Some(thread::spawn(move || {
+                let context = Arc::new(get_context().unwrap());
+
+                let context_clone = Arc::clone(&context);
+
                 loop {
                     for event in device.fetch_events().unwrap() {
                         if let evdev::InputEventKind::Key(key) = event.kind() {
-
                             if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                 println!("Show QAM");
+                                match &*context_clone {
+                                    Some(ctx) => {
+                                        ctx.clone();
+                                        execute(context_str, String::from("window.HandleSystemKeyEvents({eKey: 1})"))
+                                    }
+                                    None => String::new(),
+                                };
                             }
 
                             if key == evdev::Key::KEY_F16 && event.value() == 0 {
                                 println!("Show menu");
                             }
-
                         }
                     }
                 }
