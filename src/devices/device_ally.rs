@@ -86,8 +86,8 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
 
     match device {
         Some(mut device) => {
-            // Use the device
-            println!("Ally specific device found: {}", device.name().unwrap_or("Unnamed device"));
+
+            println!("Ally-specific device found: {}", device.name().unwrap_or("Unnamed device"));
 
             Some(thread::spawn(move || {
                 let context = Arc::new(get_context().unwrap());
@@ -98,13 +98,13 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
                     for event in device.fetch_events().unwrap() {
                         if let evdev::InputEventKind::Key(key) = event.kind() {
                             if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
-                                println!("Show QAM");
                                 let context_str = context_clone.deref().clone();
                                 execute(context_str, String::from("window.HandleSystemKeyEvents({eKey: 1})"));
                             }
 
                             if key == evdev::Key::KEY_F16 && event.value() == 0 {
-                                println!("Show menu");
+                                let context_str = context_clone.deref().clone();
+                                execute(context_str, String::from("window.HandleSystemKeyEvents({eKey: 0})"));
                             }
                         }
                     }
@@ -112,7 +112,7 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
             }))
         }
         None => {
-            println!("No device found");
+            println!("No Ally-specific found");
             None
         }
     }
