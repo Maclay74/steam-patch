@@ -7,9 +7,9 @@ mod utils;
 
 fn main() -> std::io::Result<()> {
 
-    /*let mut threads = Vec::new();
+    let mut threads = Vec::new();
 
-    if let Some(device) = create_device() {
+    /*if let Some(device) = create_device() {
         println!("Device created");
         if let Some(mapper_thread) = device.get_key_mapper() {
             println!("Mapper is there");
@@ -17,7 +17,7 @@ fn main() -> std::io::Result<()> {
         }
     }*/
 
-    //threads.push(server::start_server());
+    threads.push(server::start_server());
 
     //steam::patch_steam();
 
@@ -32,10 +32,6 @@ fn main() -> std::io::Result<()> {
     /*for thread in threads {
         thread.join().unwrap();
     }*/
-
-    loop {
-        
-    }
 
     Ok(())
 }
