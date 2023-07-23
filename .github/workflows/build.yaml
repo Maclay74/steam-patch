@@ -51,8 +51,8 @@ jobs:
           command: build
           args: --target x86_64-unknown-linux-gnu
 
-      - name: ✂️ Strip Debug Symbols
-        run: strip -s target/x86_64-unknown-linux-gnu/release/steam-patch
+#      - name: ✂️ Strip Debug Symbols
+#        run: strip -s target/x86_64-unknown-linux-gnu/release/steam-patch
 
 #      - name: ➡️ Compress executable with UPX
 #        run: |
