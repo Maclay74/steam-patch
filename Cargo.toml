@@ -16,6 +16,7 @@ notify = { version = "6.0.1", default-features = false }
 futures = { default-features = false, version = "0.3" }
 sysinfo = { default-features = false, version = "0.29.4" }
 regex = "1"
+evdev = "0.12.1"
 
 [profile.release]
 opt-level = 'z'     # Optimize for size
