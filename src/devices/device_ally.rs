@@ -93,6 +93,7 @@ pub fn start_mapper() -> Option<JoinHandle<()>> {
                 let context = Arc::new(get_context().unwrap());
 
                 let context_clone = Arc::clone(&context);
+                println!("Starting loop for keys");
 
                 loop {
                     for event in device.fetch_events().unwrap() {

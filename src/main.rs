@@ -11,7 +11,9 @@ async fn main() -> std::io::Result<()> {
     let mut threads = Vec::new();
 
     if let Some(device) = create_device() {
+        println!("Device created");
         if let Some(mapper_thread) = device.get_key_mapper() {
+            println!("Mapper is there");
             threads.push(mapper_thread);
         }
     }
@@ -21,7 +23,7 @@ async fn main() -> std::io::Result<()> {
     let _watcher = match steam::patch_steam() {
         Ok(watcher) => watcher,
         Err(_) => {
-            eprintln!("Error setting up file watcher. Exiting...");
+            println!("Error setting up file watcher. Exiting...");
             std::process::exit(1);
         },
     };
