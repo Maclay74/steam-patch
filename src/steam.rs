@@ -44,7 +44,9 @@ pub fn get_context() -> Option<String> {
                     Err(_) => println!("Failed to deserialize response!")
                 }
             }
-            Err(_) => {}
+            Err(_) => {
+                println!("Couldn't connect to Steam");
+            }
         }
 
         thread::sleep(Duration::from_millis(50));

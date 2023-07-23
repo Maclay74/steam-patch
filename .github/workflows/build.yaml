@@ -54,10 +54,10 @@ jobs:
       - name: ✂️ Strip Debug Symbols
         run: strip -s target/x86_64-unknown-linux-gnu/release/steam-patch
 
-      - name: ➡️ Compress executable with UPX
-        run: |
-          sudo apt-get install upx
-          upx --best target/x86_64-unknown-linux-gnu/release/steam-patch
+#      - name: ➡️ Compress executable with UPX
+#        run: |
+#          sudo apt-get install upx
+#          upx --best target/x86_64-unknown-linux-gnu/release/steam-patch
 
       - name: 📦 Upload build
         uses: actions/upload-artifact@v2
