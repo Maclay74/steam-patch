@@ -15,38 +15,43 @@ pub trait Device {
 }
 
 pub fn create_device() -> Option<Box<dyn Device>> {
-    let device_name = get_device_name();
+    match get_device_name() {
+        Some(device_name) => {
+            match device_name.trim() {
+                // Asus Rog Ally
+                "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => {
+                    Some(Box::new(DeviceAlly::new()))
+                }
 
-    match device_name.trim() {
-        // Asus Rog Ally
-        "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => Some(Box::new(DeviceAlly::new())),
+                // Ayaneo 2
+                "AMD Ryzen 7 6800U with Radeon Graphics AYANEO AYANEO 2" => {
+                    Some(Box::new(DeviceGeneric::new(28)))
+                }
 
-        // Ayaneo 2
-        "AMD Ryzen 7 6800U with Radeon Graphics AYANEO AYANEO 2" => {
-            Some(Box::new(DeviceGeneric::new(28)))
+                // Ayaneo Geek 1S
+                "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK 1S" => {
+                    Some(Box::new(DeviceGeneric::new(28)))
+                }
+
+                // GPD WM2
+                "AMD Ryzen 7 6800U with Radeon Graphics GPD G1619-04" => {
+                    Some(Box::new(DeviceGeneric::new(28)))
+                }
+
+                // AOKZOE A1
+                "AMD Ryzen 7 6800U with Radeon Graphics AOKZOE AOKZOE A1 AR07" => {
+                    Some(Box::new(DeviceGeneric::new(18)))
+                }
+
+                // Any other device
+                _ => Some(Box::new(DeviceGeneric::new(25))),
+            }
         }
-
-        // Ayaneo Geek 1S
-        "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK 1S" => {
-            Some(Box::new(DeviceGeneric::new(28)))
-        }
-
-        // GPD WM2
-        "AMD Ryzen 7 6800U with Radeon Graphics GPD G1619-04" => {
-            Some(Box::new(DeviceGeneric::new(28)))
-        }
-
-        // AOKZOE A1
-        "AMD Ryzen 7 6800U with Radeon Graphics AOKZOE AOKZOE A1 AR07" => {
-            Some(Box::new(DeviceGeneric::new(18)))
-        }
-
-        // Any other device
-        _ => Some(Box::new(DeviceGeneric::new(25))),
+        None => None,
     }
 }
 
-fn get_device_name() -> String {
+fn get_device_name() -> Option<String> {
     let cpuinfo = fs::read_to_string("/proc/cpuinfo").expect("Unknown");
 
     let model_re = Regex::new(r"model name\s*:\s*(.*)").unwrap();
@@ -54,15 +59,15 @@ fn get_device_name() -> String {
         .trim()
         .to_string();
 
-    let board_vendor = fs::read_to_string("/sys/devices/virtual/dmi/id/board_vendor")
-        .expect("Unknown")
-        .trim()
-        .to_string();
+    let board_vendor = match fs::read_to_string("/sys/devices/virtual/dmi/id/board_vendor") {
+        Ok(str) => str.trim().to_string(),
+        Err(_) => return None,
+    };
 
-    let board_name = fs::read_to_string("/sys/devices/virtual/dmi/id/board_name")
-        .expect("Unknown")
-        .trim()
-        .to_string();
+    let board_name = match fs::read_to_string("/sys/devices/virtual/dmi/id/board_name") {
+        Ok(str) => str.trim().to_string(),
+        Err(_) => return None,
+    };
 
-    format!("{} {} {}", model, board_vendor, board_name)
+    Some(format!("{} {} {}", model, board_vendor, board_name))
 }

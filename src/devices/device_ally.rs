@@ -3,7 +3,7 @@ use crate::devices::device_generic::DeviceGeneric;
 use crate::devices::Patch;
 use crate::patch::PatchFile;
 use crate::server::SettingsRequest;
-//use crate::steam::{execute, get_context};
+use crate::steam::SteamClient;
 use std::fs;
 use std::thread;
 use std::time::Duration;
@@ -81,43 +81,33 @@ pub fn start_mapper() -> Option<tokio::task::JoinHandle<()>> {
     let device = pick_device();
 
     match device {
-        Some(mut device) => {
-            println!(
-                "Ally-specific device found: {}",
-                device.name().unwrap_or("Unnamed device")
-            );
+        Some(device) => Some(tokio::spawn(async {
+            if let Ok(mut events) = device.into_event_stream() {
+                if let Some(mut steam) = SteamClient::new().await {
+                    loop {
+                        if let Ok(event) = events.next_event().await {
+                            if let evdev::InputEventKind::Key(key) = event.kind() {
+                                // QAM button pressed
+                                if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
+                                    println!("Show QAM");
+                                    steam
+                                        .execute("window.HandleSystemKeyEvents({eKey: 1})")
+                                        .await;
+                                }
 
-            Some(thread::spawn(move || {
-                let context = Arc::new(get_context().unwrap());
-
-                let context_clone = Arc::clone(&context);
-                println!("Starting loop for keys");
-
-                loop {
-                    for event in device.fetch_events().unwrap() {
-                        if let evdev::InputEventKind::Key(key) = event.kind() {
-                            if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
-                                println!("Show QAM");
-                                let context_str = context_clone.deref().clone();
-                                execute(
-                                    context_str,
-                                    String::from("window.HandleSystemKeyEvents({eKey: 1})"),
-                                );
-                            }
-
-                            if key == evdev::Key::KEY_F16 && event.value() == 0 {
-                                println!("Show Menu");
-                                let context_str = context_clone.deref().clone();
-                                execute(
-                                    context_str,
-                                    String::from("window.HandleSystemKeyEvents({eKey: 0})"),
-                                );
+                                // Main menu button pressed
+                                if key == evdev::Key::KEY_F16 && event.value() == 0 {
+                                    println!("Show Menu");
+                                    steam
+                                        .execute("window.HandleSystemKeyEvents({eKey: 0})")
+                                        .await;
+                                }
                             }
                         }
                     }
                 }
-            }))
-        }
+            }
+        })),
         None => {
             println!("No Ally-specific found");
             None

@@ -1,9 +1,9 @@
 use crate::devices::create_device;
 
 mod devices;
-mod server;
-//mod steam;
 mod patch;
+mod server;
+mod steam;
 mod utils;
 
 #[tokio::main]
@@ -22,6 +22,10 @@ async fn main() {
         if let Some(mapper) = device.get_key_mapper() {
             tasks.push(mapper);
         }
+    }
+
+    if let Some(steam) = steam::SteamClient::watch().await {
+        tasks.push(steam);
     }
 
     let _ = futures::future::join_all(tasks).await;

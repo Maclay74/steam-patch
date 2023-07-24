@@ -1,3 +1,4 @@
+use hyper::http::HeaderValue;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::Request;
 use hyper::{body, Body, Method, Response, Server};
@@ -17,8 +18,6 @@ pub struct PerAppConfig {
 }
 
 async fn update_settings(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    println!("Update settings");
-
     // Convert the request body into bytes
     let bytes = body::to_bytes(req.into_body())
         .await
@@ -30,7 +29,6 @@ async fn update_settings(req: Request<Body>) -> Result<Response<Body>, Infallibl
         .map_err(|_| Response::new(Body::from("Failed to deserialize request body")))
         .unwrap();
 
-    // Handle your request here, using the deserialized settings_request
     if let Some(device) = create_device() {
         device.update_settings(settings_request);
     }
@@ -38,13 +36,31 @@ async fn update_settings(req: Request<Body>) -> Result<Response<Body>, Infallibl
     Ok(Response::new(Body::from("Settings updated")))
 }
 
+fn set_cors_headers(mut response: Response<Body>) -> Response<Body> {
+    let headers = response.headers_mut();
+
+    headers.insert("Access-Control-Allow-Origin", HeaderValue::from_static("*"));
+    headers.insert(
+        "Access-Control-Allow-Methods",
+        HeaderValue::from_static("GET, POST, PUT, DELETE, OPTIONS"),
+    );
+    headers.insert(
+        "Access-Control-Allow-Headers",
+        HeaderValue::from_static("*"),
+    );
+
+    response
+}
+
 async fn router(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let path = req.uri().path(); // Get the path of the request
 
-    match (req.method(), path) {
+    let response = match (req.method(), path) {
         (&Method::POST, "/update_settings") => update_settings(req).await,
         _ => Ok(Response::new(Body::empty())),
-    }
+    };
+
+    Ok(set_cors_headers(response?))
 }
 
 pub async fn run() {
@@ -53,6 +69,8 @@ pub async fn run() {
     let addr = ([127, 0, 0, 1], 1338).into();
 
     let server = Server::bind(&addr).serve(make_svc);
+
+    println!("Server started");
 
     if let Err(e) = server.await {
         eprintln!("Server error: {}", e);

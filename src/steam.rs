@@ -1,18 +1,18 @@
 #![allow(non_snake_case)] // Allow non-snake_case identifiers
 
-use crate::devices::{create_device, PatchFile};
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use regex::Regex;
-use reqwest::blocking::Client;
+use crate::devices::create_device;
+use crate::patch::{Patch, PatchFile};
+use hyper::{Client, Uri};
+use inotify::{EventMask, Inotify, WatchMask};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::env;
+use std::fs;
 use std::io::Error;
-use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
-use std::{fs, thread};
+use sysinfo::{ProcessExt, SystemExt};
+use tokio::time::{sleep, Duration};
 use tungstenite::connect;
-use tungstenite::Message;
+use tungstenite::stream::MaybeTlsStream;
+use tungstenite::{Message, WebSocket};
 
 #[derive(Deserialize)] // Enable deserialization for the Tab struct
 struct Tab {
@@ -20,83 +20,16 @@ struct Tab {
     webSocketDebuggerUrl: String,
 }
 
-pub fn get_context() -> Option<String> {
-    println!("Getting Steam...");
-
-    let client = Client::new();
-    let start_time = Instant::now();
-
-    loop {
-        if start_time.elapsed() > Duration::from_secs(60) {
-            println!("Timeout while trying to fetch Steam data!");
-            return None;
-        }
-
-        match client.get("http://localhost:8080/json").send() {
-            Ok(response) => match response.json::<Vec<Tab>>() {
-                Ok(tabs) => {
-                    if let Some(tab) = tabs.into_iter().find(|tab| {
-                        tab.title == "SharedJSContext" && !tab.webSocketDebuggerUrl.is_empty()
-                    }) {
-                        return Some(tab.webSocketDebuggerUrl);
-                    }
-                }
-                Err(_) => println!("Failed to deserialize response!"),
-            },
-            Err(_) => {
-                println!("Couldn't connect to Steam");
-            }
-        }
-
-        thread::sleep(Duration::from_millis(50));
-    }
+pub struct SteamClient {
+    socket: WebSocket<MaybeTlsStream<std::net::TcpStream>>,
 }
 
-fn reboot(link: String) {
-    let (mut socket, _) = match connect(link) {
-        Ok(socket) => socket,
-        Err(_) => {
-            println!("Couldn't reload Steam!");
-            return;
-        }
-    };
+impl SteamClient {
+    pub async fn patch(&mut self, patches: Vec<Patch>) -> Result<(), Error> {
+        let mut opened_files: HashMap<String, String> = HashMap::new();
 
-    let message = serde_json::json!({
-        "id": 1,
-        "method": "Page.reload",
-    });
-    match socket.write_message(Message::Text(message.to_string())) {
-        Ok(_) => println!("Steam Rebooted"),
-        Err(err) => println!("Failed to reboot Steam: {:?}", err),
-    }
-}
-
-pub fn execute(link: String, js_code: String) {
-    let (mut socket, _) = match connect(link) {
-        Ok(socket) => socket,
-        Err(_) => {
-            println!("Couldn't reload Steam!");
-            return;
-        }
-    };
-
-    let message = serde_json::json!({
-        "id": 1,
-        "method": "Runtime.evaluate",
-        "params": {
-            "expression": js_code,
-        }
-    });
-    socket
-        .write_message(Message::Text(message.to_string()))
-        .expect("TODO: panic message");
-}
-
-fn apply_patches() -> Result<(), Error> {
-    let mut opened_files: HashMap<String, String> = HashMap::new();
-
-    if let Some(device) = create_device() {
-        let patches = device.get_patches();
+        //if let Some(device) = create_device() {
+        //let patches = device.get_patches();
         for patch in patches {
             let path_file = patch.destination.get_file().unwrap();
             let path_str = path_file.to_str().unwrap().to_string();
@@ -111,56 +44,161 @@ fn apply_patches() -> Result<(), Error> {
         for (path, content) in &opened_files {
             fs::write(path, content)?; // write the updated content back to each file
         }
+        //}
+
+        Ok(())
     }
+    async fn send_message(&mut self, message: serde_json::Value) {
+        let mut retries = 3;
 
-    Ok(())
-}
+        while retries > 0 {
+            match self.socket.send(Message::Text(message.to_string())) {
+                Ok(_) => break, // the message has been successfully sent, exit the loop
+                Err(_) => {
+                    eprintln!("Couldn't send message to Steam, retrying...");
 
-pub fn patch_steam() {
-    match apply_patches() {
-        Ok(_) => {
-            if is_steam_running() {
-                match get_context() {
-                    Some(link) => reboot(link),
-                    None => println!("Can't get Steam context"),
+                    if let Some(context) = Self::get_context().await {
+                        match connect(context) {
+                            Ok((socket, _)) => {
+                                self.socket = socket;
+                            }
+                            Err(_) => {
+                                println!("Still can't connect to Steam");
+                            }
+                        };
+                    }
+
+                    retries -= 1;
                 }
             }
         }
-        Err(_) => println!("Couldn't patch chunk"),
+    }
+    pub async fn reboot(&mut self) {
+        self.send_message(serde_json::json!({
+            "id": 1,
+            "method": "Page.reload",
+        }))
+        .await;
+    }
+    pub async fn execute(&mut self, js_code: &str) {
+        self.send_message(serde_json::json!({
+            "id": 1,
+            "method": "Runtime.evaluate",
+            "params": {
+                "expression": js_code,
+            }
+        }))
+        .await;
+    }
+    async fn get_context() -> Option<String> {
+        println!("Getting Steam...");
+
+        let client = Client::new();
+        let start_time = tokio::time::Instant::now();
+        let uri: Uri = "http://localhost:8080/json".parse().unwrap();
+
+        loop {
+            if start_time.elapsed() > Duration::from_secs(60) {
+                println!("Timeout while trying to fetch Steam data!");
+                return None;
+            }
+
+            match client.get(uri.clone()).await {
+                Ok(response) => {
+                    let bytes = hyper::body::to_bytes(response.into_body()).await.unwrap();
+                    let tabs: Vec<Tab> =
+                        serde_json::from_slice(&bytes).unwrap_or_else(|_| Vec::new());
+                    if let Some(tab) = tabs.into_iter().find(|tab| {
+                        tab.title == "SharedJSContext" && !tab.webSocketDebuggerUrl.is_empty()
+                    }) {
+                        return Some(tab.webSocketDebuggerUrl);
+                    }
+                }
+                Err(_) => println!("Couldn't connect to Steam"),
+            }
+
+            sleep(Duration::from_millis(50)).await;
+        }
+    }
+    pub async fn new() -> Option<SteamClient> {
+        if let Some(context) = Self::get_context().await {
+            let (socket, _) = match connect(context) {
+                Ok(socket) => socket,
+                Err(_) => {
+                    println!("Couldn't connect to Steam!");
+                    return None;
+                }
+            };
+
+            return Some(SteamClient { socket });
+        }
+
+        None
     }
 
-    /*
+    pub async fn watch() -> Option<tokio::task::JoinHandle<()>> {
+        // If Steam client is already running, patch it and restart
+        if Self::is_running() {
+            let mut client = Self::new().await?;
 
-    // Watch for changes in the chunk.
-    let mut watcher: RecommendedWatcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
-        let event = match res {
-            Ok(event) => event,
-            Err(e) => {
-                println!("watch error: {:?}", e);
-                return;
+            if let Some(device) = create_device() {
+                match client.patch(device.get_patches()).await {
+                    Ok(_) => println!("Steam patched"),
+                    Err(_) => eprintln!("Couldn't patch Steam"),
+                }
             }
-        };
 
-        if let notify::EventKind::Remove(_) = event.kind {
-            if let Some(path) = event.paths.get(0) {
-                if let Some(file_name) = path.file_name() {
-                    if file_name.to_string_lossy().contains("chunk") {
-                        println!("Steam patched itself! {:?}", event.kind);
-                        if let Some(link) = get_context() {
-                            apply_patches().expect("Failed to apply patches");
-                            reboot(link);
-                        } else {
-                            println!("Can't get Steam context");
+            client.reboot().await;
+        }
+
+        // Watch for changes in chunk
+        let mut inotify = Inotify::init().expect("Failed to initialize inotify");
+        let chunk_patch = PatchFile::Chunk.get_file()?;
+
+        inotify
+            .watches()
+            .add(chunk_patch.as_path(), WatchMask::DELETE_SELF)
+            .unwrap();
+
+        println!("Watching current directory for activity...");
+        let task = tokio::task::spawn_blocking(move || {
+            let mut buffer = [0u8; 4096];
+            loop {
+                if let Ok(events) = inotify.read_events_blocking(&mut buffer) {
+                    for event in events {
+                        if event.mask.contains(EventMask::DELETE_SELF) {
+                            println!("Steam patched itself!");
+
+                            tokio::task::block_in_place(|| {
+                                let rt = tokio::runtime::Runtime::new().unwrap();
+                                rt.block_on(async {
+                                    if let Some(mut client) = Self::new().await {
+                                        if let Some(device) = create_device() {
+                                            match client.patch(device.get_patches()).await {
+                                                Ok(_) => println!("Steam patched"),
+                                                Err(_) => eprintln!("Couldn't patch Steam"),
+                                            }
+                                        }
+                                        client.reboot().await;
+                                    }
+                                })
+                            });
                         }
                     }
                 }
             }
-        }
-    }).unwrap();
+        });
 
-    watcher.watch(PatchFile::Chunk.get_file().unwrap().as_path(), RecursiveMode::NonRecursive).unwrap();
+        Some(task)
+    }
+    fn is_running() -> bool {
+        let mut sys = sysinfo::System::new_all();
 
-    Ok(watcher)
+        // We need to update the system value to get the fresh process list
+        sys.refresh_all();
 
-     */
+        sys.processes()
+            .values()
+            .any(|process| process.name() == "steam")
+    }
 }

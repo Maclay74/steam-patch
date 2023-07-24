@@ -2,9 +2,7 @@ use regex::Regex;
 
 use crate::utils::get_username;
 use std::{
-    env,
-    error::Error,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
 };
 
