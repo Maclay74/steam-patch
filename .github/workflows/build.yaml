@@ -49,7 +49,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target x86_64-unknown-linux-gnu
+          args: --release --target x86_64-unknown-linux-gnu
 
       - name: ✂️ Strip Debug Symbols
         run: strip -s target/x86_64-unknown-linux-gnu/release/steam-patch
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: steam-patch
-          path: target/x86_64-unknown-linux-gnu/debug/steam-patch
+          path: target/x86_64-unknown-linux-gnu/release/steam-patch
 
       - name: 🚀 Release
         if: startsWith(github.ref, 'refs/tags/')
