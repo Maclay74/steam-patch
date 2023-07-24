@@ -1,36 +1,28 @@
 use crate::devices::create_device;
 
-mod server;
-mod steam;
 mod devices;
+mod server;
+//mod steam;
+mod patch;
 mod utils;
 
-fn main() -> std::io::Result<()> {
-    let mut threads = Vec::new();
+#[tokio::main]
+async fn main() {
+    let mut tasks = vec![];
+
+    tasks.push(tokio::spawn(server::run()));
+
+    tasks.push(tokio::spawn(async {
+        // Here goes your file watcher code
+        println!("file watcher")
+    }));
 
     if let Some(device) = create_device() {
         println!("Device created");
-        if let Some(mapper_thread) = device.get_key_mapper() {
-            println!("Mapper is there");
-            threads.push(mapper_thread);
+        if let Some(mapper) = device.get_key_mapper() {
+            tasks.push(mapper);
         }
     }
 
-    //threads.push(server::start_server());
-
-    //steam::patch_steam();
-
-    /*let _watcher = match steam::patch_steam() {
-         Ok(watcher) => watcher,
-         Err(_) => {
-             println!("Error setting up file watcher. Exiting...");
-             std::process::exit(1);
-         },
-     };*/
-
-    for thread in threads {
-        thread.join().unwrap();
-    }
-
-    Ok(())
+    let _ = futures::future::join_all(tasks).await;
 }
