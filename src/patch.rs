@@ -28,17 +28,10 @@ impl PatchFile {
 
 impl PatchFile {
     pub fn get_file(&self) -> Option<PathBuf> {
-        // Depending on the system, different path
-        let steamui_path = if cfg!(windows) {
-            env::var_os("PROGRAMFILES(X86)")
-                .map(|path| Path::new(&path).join("Steam").join("steamui"))
-        } else {
-            let username = get_username();
-            dirs::home_dir()
-                .map(|home| home.join(format!("/home/{}/.local/share/Steam/steamui", username)))
-        };
+        let username = get_username();
+        let steamui_path = dirs::home_dir()
+            .map(|home| home.join(format!("/home/{}/.local/share/Steam/steamui", username)));
 
-        // Steam folder not found
         let steamui_path = match steamui_path {
             Some(path) => path,
             None => return None,

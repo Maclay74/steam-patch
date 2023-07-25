@@ -1,20 +1,22 @@
 #![allow(non_snake_case)] // Allow non-snake_case identifiers
 
 use crate::devices::create_device;
-use crate::patch::{Patch, PatchFile};
+use crate::patch::Patch;
+use crate::utils::get_username;
 use hyper::{Client, Uri};
-use inotify::{EventMask, Inotify, WatchMask};
+use inotify::{Inotify, WatchMask};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs;
-use std::io::Error;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Error};
+use std::path::PathBuf;
 use sysinfo::{ProcessExt, SystemExt};
 use tokio::time::{sleep, Duration};
 use tungstenite::connect;
 use tungstenite::stream::MaybeTlsStream;
 use tungstenite::{Message, WebSocket};
 
-#[derive(Deserialize)] // Enable deserialization for the Tab struct
+#[derive(Deserialize)]
 struct Tab {
     title: String,
     webSocketDebuggerUrl: String,
@@ -28,8 +30,6 @@ impl SteamClient {
     pub async fn patch(&mut self, patches: Vec<Patch>) -> Result<(), Error> {
         let mut opened_files: HashMap<String, String> = HashMap::new();
 
-        //if let Some(device) = create_device() {
-        //let patches = device.get_patches();
         for patch in patches {
             let path_file = patch.destination.get_file().unwrap();
             let path_str = path_file.to_str().unwrap().to_string();
@@ -42,12 +42,12 @@ impl SteamClient {
         }
 
         for (path, content) in &opened_files {
-            fs::write(path, content)?; // write the updated content back to each file
+            fs::write(path, content)?;
         }
-        //}
 
         Ok(())
     }
+
     async fn send_message(&mut self, message: serde_json::Value) {
         let mut retries = 3;
 
@@ -73,6 +73,7 @@ impl SteamClient {
             }
         }
     }
+
     pub async fn reboot(&mut self) {
         self.send_message(serde_json::json!({
             "id": 1,
@@ -80,6 +81,7 @@ impl SteamClient {
         }))
         .await;
     }
+
     pub async fn execute(&mut self, js_code: &str) {
         self.send_message(serde_json::json!({
             "id": 1,
@@ -90,6 +92,7 @@ impl SteamClient {
         }))
         .await;
     }
+
     async fn get_context() -> Option<String> {
         println!("Getting Steam...");
 
@@ -120,6 +123,7 @@ impl SteamClient {
             sleep(Duration::from_millis(50)).await;
         }
     }
+
     pub async fn new() -> Option<SteamClient> {
         if let Some(context) = Self::get_context().await {
             let (socket, _) = match connect(context) {
@@ -134,6 +138,16 @@ impl SteamClient {
         }
 
         None
+    }
+
+    pub fn get_log_path() -> Option<PathBuf> {
+        let username = get_username();
+        dirs::home_dir().map(|home| {
+            home.join(format!(
+                "/home/{}/.local/share/Steam/logs/bootstrap_log.txt",
+                username
+            ))
+        })
     }
 
     pub async fn watch() -> Option<tokio::task::JoinHandle<()>> {
@@ -151,38 +165,43 @@ impl SteamClient {
             client.reboot().await;
         }
 
-        // Watch for changes in chunk
+        // Watch for changes in log
         let mut inotify = Inotify::init().expect("Failed to initialize inotify");
-        let chunk_patch = PatchFile::Chunk.get_file()?;
 
-        inotify
-            .watches()
-            .add(chunk_patch.as_path(), WatchMask::DELETE_SELF)
-            .unwrap();
+        if let Some(log_path) = Self::get_log_path() {
+            inotify.watches().add(log_path, WatchMask::MODIFY).unwrap();
+        }
 
-        println!("Watching current directory for activity...");
+        println!("Watching Steam log...");
         let task = tokio::task::spawn_blocking(move || {
             let mut buffer = [0u8; 4096];
             loop {
                 if let Ok(events) = inotify.read_events_blocking(&mut buffer) {
-                    for event in events {
-                        if event.mask.contains(EventMask::DELETE_SELF) {
-                            println!("Steam patched itself!");
+                    for _ in events {
+                        let file = File::open(Self::get_log_path().unwrap()).unwrap();
+                        let reader = BufReader::new(file);
 
-                            tokio::task::block_in_place(|| {
-                                let rt = tokio::runtime::Runtime::new().unwrap();
-                                rt.block_on(async {
-                                    if let Some(mut client) = Self::new().await {
-                                        if let Some(device) = create_device() {
-                                            match client.patch(device.get_patches()).await {
-                                                Ok(_) => println!("Steam patched"),
-                                                Err(_) => eprintln!("Couldn't patch Steam"),
+                        match reader.lines().last() {
+                            Some(Ok(line)) => {
+                                if line.contains("Verification complete") {
+                                    tokio::task::block_in_place(|| {
+                                        let rt = tokio::runtime::Runtime::new().unwrap();
+                                        rt.block_on(async {
+                                            if let Some(mut client) = Self::new().await {
+                                                if let Some(device) = create_device() {
+                                                    match client.patch(device.get_patches()).await {
+                                                        Ok(_) => println!("Steam patched"),
+                                                        Err(_) => eprintln!("Couldn't patch Steam"),
+                                                    }
+                                                }
+                                                client.reboot().await;
                                             }
-                                        }
-                                        client.reboot().await;
-                                    }
-                                })
-                            });
+                                        })
+                                    });
+                                }
+                            }
+                            Some(Err(err)) => println!("Error reading line: {}", err),
+                            None => println!("The file is empty"),
                         }
                     }
                 }
@@ -191,6 +210,7 @@ impl SteamClient {
 
         Some(task)
     }
+
     fn is_running() -> bool {
         let mut sys = sysinfo::System::new_all();
 
