@@ -22,7 +22,12 @@ impl DeviceAlly {
 
 impl Device for DeviceAlly {
     fn update_settings(&self, request: SettingsRequest) {
-        self.device.update_settings(request);
+        if let Some(per_app) = &request.per_app {
+            // TDP changes
+            if let Some(tdp) = per_app.tdp_limit {
+                self.set_tdp(tdp);
+            }
+        }
     }
 
     fn get_patches(&self) -> Vec<Patch> {
@@ -36,14 +41,14 @@ impl Device for DeviceAlly {
     }
 
     fn set_tdp(&self, tdp: i8) {
-        self.device.set_tdp(tdp);
-
         // Update thermal policy
         let thermal_policy = match tdp {
-            val if val < 12 => 0,                 // silent
-            val if (12..=25).contains(&val) => 1, // performance
-            _ => 2,                               // turbo
+            val if val < 12 => 2,                 // silent
+            val if (12..=25).contains(&val) => 0, // performance
+            _ => 1,                               // turbo
         };
+
+        println!("New Policy: {}", thermal_policy);
 
         let file_path = "/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy";
         let _ = thread::spawn(move || match fs::read_to_string(file_path) {
@@ -54,6 +59,8 @@ impl Device for DeviceAlly {
             }
             _ => {}
         });
+
+        self.device.set_tdp(tdp);
     }
 
     fn get_key_mapper(&self) -> Option<tokio::task::JoinHandle<()>> {
