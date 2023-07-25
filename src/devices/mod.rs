@@ -40,7 +40,7 @@ pub fn create_device() -> Option<Box<dyn Device>> {
 
                 // AOKZOE A1
                 "AMD Ryzen 7 6800U with Radeon Graphics AOKZOE AOKZOE A1 AR07" => {
-                    Some(Box::new(DeviceGeneric::new(18)))
+                    Some(Box::new(DeviceGeneric::new(28)))
                 }
 
                 // Any other device
