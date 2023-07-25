@@ -1,10 +1,7 @@
 use regex::Regex;
 
 use crate::utils::get_username;
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 pub struct Patch {
     pub text_to_find: String,
