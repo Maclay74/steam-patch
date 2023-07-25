@@ -37,7 +37,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=${WORKING_FOLDER}/steam-patch
+ExecStart=${WORKING_FOLDER}/steam-patch --user=${SUDO_USER}
 WorkingDirectory=${WORKING_FOLDER}
 
 [Install]
