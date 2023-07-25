@@ -4,24 +4,22 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-actix-web = "4.3.1"
-reqwest = { version = "0.11.18", features = ["blocking", "json"] }
-tokio = "1.29.1"
+tokio = { version = "1", features = [ "rt-multi-thread", "macros"] }
 serde = { version = "1.0.169", features=["derive"] }
 serde_json = { version = "1.0.100" }
-tungstenite = "0.19.0"
+tungstenite = "0.20.0"
 dirs = "5.0.1"
-actix-cors = "0.6.4"
-notify = { version = "6.0.1" }
 futures =  "0.3.28"
 sysinfo = "0.29.4"
 regex = "1"
-evdev = "0.12.1"
+evdev = { version = "0.12.1", features = ["tokio", "serde"]}
+hyper = { version = "0.14", features = ["full"] }
+inotify = "0.10.1"
 
 [profile.release]
-opt-level = 0     # Optimize for size
-debug = true
-# lto = true          # Enable link-time optimization
-# codegen-units = 1   # Reduce number of codegen units to increase optimizations
-# panic = 'abort'     # Abort on panic
-# strip = true        # Strip symbols from binary*
+opt-level = "z"
+# debug = true
+lto = true          # Enable link-time optimization
+codegen-units = 1   # Reduce number of codegen units to increase optimizations
+panic = 'abort'     # Abort on panic
+strip = true        # Strip symbols from binary*
