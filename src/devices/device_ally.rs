@@ -90,25 +90,25 @@ pub fn start_mapper() -> Option<tokio::task::JoinHandle<()>> {
     match device {
         Some(device) => Some(tokio::spawn(async {
             if let Ok(mut events) = device.into_event_stream() {
-                if let Some(mut steam) = SteamClient::new().await {
-                    loop {
-                        if let Ok(event) = events.next_event().await {
-                            if let evdev::InputEventKind::Key(key) = event.kind() {
-                                // QAM button pressed
-                                if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
-                                    println!("Show QAM");
-                                    steam
-                                        .execute("window.HandleSystemKeyEvents({eKey: 1})")
-                                        .await;
-                                }
+                let mut steam = SteamClient::new();
+                steam.connect().await;
+                loop {
+                    if let Ok(event) = events.next_event().await {
+                        if let evdev::InputEventKind::Key(key) = event.kind() {
+                            // QAM button pressed
+                            if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
+                                println!("Show QAM");
+                                steam
+                                    .execute("window.HandleSystemKeyEvents({eKey: 1})")
+                                    .await;
+                            }
 
-                                // Main menu button pressed
-                                if key == evdev::Key::KEY_F16 && event.value() == 0 {
-                                    println!("Show Menu");
-                                    steam
-                                        .execute("window.HandleSystemKeyEvents({eKey: 0})")
-                                        .await;
-                                }
+                            // Main menu button pressed
+                            if key == evdev::Key::KEY_F16 && event.value() == 0 {
+                                println!("Show Menu");
+                                steam
+                                    .execute("window.HandleSystemKeyEvents({eKey: 0})")
+                                    .await;
                             }
                         }
                     }

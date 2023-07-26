@@ -1,0 +1,13 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "tunnel",
+            "type": "shell",
+            "group": "none",
+            "detail": "SSH tunnel to the device",
+            "command": "ssh gamer@${config:deckip} -N -f -L 4040:localhost:8080",
+            "problemMatcher": []
+        },
+    ]
+}

@@ -23,11 +23,11 @@ struct Tab {
 }
 
 pub struct SteamClient {
-    socket: WebSocket<MaybeTlsStream<std::net::TcpStream>>,
+    socket: Option<WebSocket<MaybeTlsStream<std::net::TcpStream>>>,
 }
 
 impl SteamClient {
-    pub async fn patch(&mut self, patches: Vec<Patch>) -> Result<(), Error> {
+    pub fn patch(&mut self, patches: Vec<Patch>) -> Result<(), Error> {
         let mut opened_files: HashMap<String, String> = HashMap::new();
 
         for patch in patches {
@@ -48,26 +48,44 @@ impl SteamClient {
         Ok(())
     }
 
+    pub fn unpatch(&mut self, patches: Vec<Patch>) -> Result<(), Error> {
+        let mut opened_files: HashMap<String, String> = HashMap::new();
+
+        for patch in patches {
+            let path_file = patch.destination.get_file().unwrap();
+            let path_str = path_file.to_str().unwrap().to_string();
+            let content = opened_files
+                .entry(path_str.clone())
+                .or_insert_with(|| fs::read_to_string(&path_file).unwrap());
+            let text_to_find = &patch.text_to_find;
+            let replacement_text = &patch.replacement_text;
+            *content = content.replace(replacement_text, text_to_find);
+        }
+
+        for (path, content) in &opened_files {
+            fs::write(path, content)?;
+        }
+
+        Ok(())
+    }
+
     async fn send_message(&mut self, message: serde_json::Value) {
         let mut retries = 3;
 
         while retries > 0 {
-            match self.socket.send(Message::Text(message.to_string())) {
-                Ok(_) => break, // the message has been successfully sent, exit the loop
-                Err(_) => {
-                    eprintln!("Couldn't send message to Steam, retrying...");
+            match self.socket.as_mut() {
+                Some(socket) => match socket.send(Message::Text(message.to_string())) {
+                    Ok(_) => break,
+                    Err(_) => {
+                        eprintln!("Couldn't send message to Steam, retrying...");
 
-                    if let Some(context) = Self::get_context().await {
-                        match connect(context) {
-                            Ok((socket, _)) => {
-                                self.socket = socket;
-                            }
-                            Err(_) => {
-                                println!("Still can't connect to Steam");
-                            }
-                        };
+                        self.connect().await;
+
+                        retries -= 1;
                     }
-
+                },
+                None => {
+                    self.connect().await;
                     retries -= 1;
                 }
             }
@@ -124,20 +142,17 @@ impl SteamClient {
         }
     }
 
-    pub async fn new() -> Option<SteamClient> {
+    pub fn new() -> SteamClient {
+        return SteamClient { socket: None };
+    }
+
+    pub async fn connect(&mut self) {
         if let Some(context) = Self::get_context().await {
-            let (socket, _) = match connect(context) {
-                Ok(socket) => socket,
-                Err(_) => {
-                    println!("Couldn't connect to Steam!");
-                    return None;
-                }
+            self.socket = match connect(context) {
+                Ok((socket, _)) => Some(socket),
+                Err(_) => None,
             };
-
-            return Some(SteamClient { socket });
         }
-
-        None
     }
 
     pub fn get_log_path() -> Option<PathBuf> {
@@ -153,10 +168,11 @@ impl SteamClient {
     pub async fn watch() -> Option<tokio::task::JoinHandle<()>> {
         // If Steam client is already running, patch it and restart
         if Self::is_running() {
-            let mut client = Self::new().await?;
+            let mut client = Self::new();
+            client.connect().await;
 
             if let Some(device) = create_device() {
-                match client.patch(device.get_patches()).await {
+                match client.patch(device.get_patches()) {
                     Ok(_) => println!("Steam patched"),
                     Err(_) => eprintln!("Couldn't patch Steam"),
                 }
@@ -175,6 +191,7 @@ impl SteamClient {
         println!("Watching Steam log...");
         let task = tokio::task::spawn_blocking(move || {
             let mut buffer = [0u8; 4096];
+            let mut client = Self::new();
             loop {
                 if let Ok(events) = inotify.read_events_blocking(&mut buffer) {
                     for _ in events {
@@ -184,20 +201,21 @@ impl SteamClient {
                         match reader.lines().last() {
                             Some(Ok(line)) => {
                                 if line.contains("Verification complete") {
-                                    tokio::task::block_in_place(|| {
-                                        let rt = tokio::runtime::Runtime::new().unwrap();
-                                        rt.block_on(async {
-                                            if let Some(mut client) = Self::new().await {
-                                                if let Some(device) = create_device() {
-                                                    match client.patch(device.get_patches()).await {
-                                                        Ok(_) => println!("Steam patched"),
-                                                        Err(_) => eprintln!("Couldn't patch Steam"),
-                                                    }
-                                                }
-                                                client.reboot().await;
-                                            }
-                                        })
-                                    });
+                                    if let Some(device) = create_device() {
+                                        match client.patch(device.get_patches()) {
+                                            Ok(_) => println!("Steam patched"),
+                                            Err(_) => eprintln!("Couldn't patch Steam"),
+                                        }
+                                    }
+                                }
+
+                                if line.contains("Shutdown") {
+                                    if let Some(device) = create_device() {
+                                        match client.unpatch(device.get_patches()) {
+                                            Ok(_) => println!("Steam unpatched"),
+                                            Err(_) => eprintln!("Couldn't unpatch Steam"),
+                                        }
+                                    }
                                 }
                             }
                             Some(Err(err)) => println!("Error reading line: {}", err),
