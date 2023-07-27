@@ -65,7 +65,7 @@ impl Device for DeviceGeneric {
             // Change resolution to Native (if Default) after installation
             Patch {
                 text_to_find: "DownloadComplete_Title\"),o=ze(r,t.data.appid());const s=(0,O.Q2)();".to_string(),
-                replacement_text: "DownloadComplete_Title\"),o=ze(r,t.data.appid()); SteamClient.Apps.GetResolutionOverrideForApp(593280).then(res => res === \"Default\" && SteamClient.Apps.SetAppResolutionOverride(593280, \"Native\")); const s=(0,O.Q2)();".to_string(),
+                replacement_text: "DownloadComplete_Title\"),o=ze(r,t.data.appid()); SteamClient.Apps.GetResolutionOverrideForApp(t.data.appid()).then(res => res === \"Default\" && SteamClient.Apps.SetAppResolutionOverride(t.data.appid(), \"Native\")); const s=(0,O.Q2)();".to_string(),
                 destination: PatchFile::Chunk,
             },
         ]
