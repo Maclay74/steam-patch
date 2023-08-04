@@ -64,7 +64,12 @@ impl Device for DeviceAlly {
     }
 
     fn get_key_mapper(&self) -> Option<tokio::task::JoinHandle<()>> {
-        start_mapper()
+        tokio::spawn(async move {
+            let mut steam = SteamClient::new();
+            steam.connect().await;
+            start_mapper(steam);
+        });
+        None
     }
 }
 
@@ -84,39 +89,51 @@ pub fn pick_device() -> Option<evdev::Device> {
     None
 }
 
-pub fn start_mapper() -> Option<tokio::task::JoinHandle<()>> {
+pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>> {
     let device = pick_device();
 
     match device {
-        Some(device) => Some(tokio::spawn(async {
+        Some(device) => Some(tokio::spawn(async move {
             if let Ok(mut events) = device.into_event_stream() {
-                let mut steam = SteamClient::new();
-                steam.connect().await;
                 loop {
-                    if let Ok(event) = events.next_event().await {
-                        if let evdev::InputEventKind::Key(key) = event.kind() {
-                            // QAM button pressed
-                            if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
-                                println!("Show QAM");
-                                steam
-                                    .execute("window.HandleSystemKeyEvents({eKey: 1})")
-                                    .await;
-                            }
+                    match events.next_event().await {
+                        Ok(event) => {
+                            if let evdev::InputEventKind::Key(key) = event.kind() {
+                                // QAM button pressed
+                                if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
+                                    println!("Show QAM");
+                                    steam
+                                        .execute("window.HandleSystemKeyEvents({eKey: 1})")
+                                        .await;
+                                }
 
-                            // Main menu button pressed
-                            if key == evdev::Key::KEY_F16 && event.value() == 0 {
-                                println!("Show Menu");
-                                steam
-                                    .execute("window.HandleSystemKeyEvents({eKey: 0})")
-                                    .await;
+                                // Main menu button pressed
+                                if key == evdev::Key::KEY_F16 && event.value() == 0 {
+                                    println!("Show Menu");
+                                    steam
+                                        .execute("window.HandleSystemKeyEvents({eKey: 0})")
+                                        .await;
+                                }
                             }
+                        },
+                        Err(_) => {
+                            print!("Error reading event stream, retrying in 1 second");
+                            thread::sleep(Duration::from_secs(1));
+                            tokio::spawn(async move {
+                                start_mapper(steam)
+                            });
+                            break
                         }
-                    }
+                    };
                 }
             }
         })),
         None => {
-            println!("No Ally-specific found");
+            println!("No Ally-specific found, retrying in 2 seconds");
+            thread::sleep(Duration::from_secs(2));
+            tokio::spawn(async move {
+                start_mapper(steam)
+            });
             None
         }
     }
