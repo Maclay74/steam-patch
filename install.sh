@@ -13,7 +13,7 @@ mkdir "${WORKING_FOLDER}"
 touch "${USER_DIR}/.steam/steam/.cef-enable-remote-debugging"
 
 # Download latest release and install it
-RELEASE=$(curl -s 'https://api.github.com/repos/Maclay74/steam-patch/releases' | jq -r "first(.[] | select(.prerelease == "false"))")
+RELEASE=$(curl -s 'https://api.github.com/repos/hicder/steam-patch/releases' | jq -r "first(.[] | select(.prerelease == "false"))")
 VERSION=$(jq -r '.tag_name' <<< ${RELEASE} )
 DOWNLOAD_URL=$(jq -r '.assets[].browser_download_url | select(endswith("steam-patch"))' <<< ${RELEASE})
 
