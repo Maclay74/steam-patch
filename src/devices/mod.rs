@@ -1,8 +1,10 @@
 pub mod device_ally;
 pub mod device_generic;
+pub mod device_ayaneo_2s;
 
 use crate::{patch::Patch, server::SettingsRequest};
 use device_ally::DeviceAlly;
+use device_ayaneo_2s::DeviceAyaneo2s;
 use device_generic::DeviceGeneric;
 use regex::Regex;
 use std::fs;
@@ -26,6 +28,11 @@ pub fn create_device() -> Option<Box<dyn Device>> {
                 // Ayaneo 2
                 "AMD Ryzen 7 6800U with Radeon Graphics AYANEO AYANEO 2" => {
                     Some(Box::new(DeviceGeneric::new(28)))
+                }
+
+                // Ayaneo 2S
+                "AMD Ryzen 7 7840U w/ Radeon 780M Graphics AYANEO AYANEO 2S" => {
+                    Some(Box::new(DeviceAyaneo2s::new()))
                 }
 
                 // Ayaneo Geek 1S
