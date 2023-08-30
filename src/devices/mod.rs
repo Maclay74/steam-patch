@@ -1,8 +1,9 @@
 pub mod device_ally;
+pub mod device_ally_tdp_only;
 pub mod device_generic;
 
 use crate::{patch::Patch, server::SettingsRequest};
-use device_ally::DeviceAlly;
+use device_ally_tdp_only::DeviceAllyTDPOnly;
 use device_generic::DeviceGeneric;
 use regex::Regex;
 use std::fs;
@@ -20,7 +21,7 @@ pub fn create_device() -> Option<Box<dyn Device>> {
             match device_name.trim() {
                 // Asus Rog Ally
                 "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => {
-                    Some(Box::new(DeviceAlly::new()))
+                    Some(Box::new(DeviceAllyTDPOnly::new()))
                 }
 
                 // Ayaneo 2
