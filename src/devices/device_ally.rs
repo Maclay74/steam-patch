@@ -82,7 +82,9 @@ pub fn pick_device() -> Option<evdev::Device> {
         let input_id = device.input_id();
 
         if input_id.vendor() == target_vendor_id && input_id.product() == target_product_id {
-            return Some(device);
+            if device.supported_keys().map_or(false, |keys| keys.contains(evdev::Key::KEY_PROG1)) {
+                return Some(device);
+            }
         }
     }
 
