@@ -64,9 +64,19 @@ pub fn create_device() -> Option<Box<dyn Device>> {
                     Some(Box::new(DeviceGeneric::new(28)))
                 }
 
-                // Ayaneo Geek 1S
-                "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK 1S" => {
+                // Ayaneo Geek
+                "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK" => {
                     Some(Box::new(DeviceGeneric::new(28)))
+                }
+
+                // Ayaneo 2S
+                "AMD Ryzen 7 7840U w/ Radeon 780M Graphics AYANEO AYANEO 2S" => {
+                    Some(Box::new(DeviceGeneric::new(30)))
+                }
+
+                // Ayaneo Geek 1S
+                "AMD Ryzen 7 7840U w/ Radeon 780M Graphics AYANEO GEEK 1S" => {
+                    Some(Box::new(DeviceGeneric::new(30)))
                 }
 
                 // GPD WM2
