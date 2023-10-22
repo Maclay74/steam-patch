@@ -19,7 +19,10 @@ pub fn get_username() -> String {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {
-        return String::from("gamer");
+        return match users::get_current_username() {
+            Some(uname) => format!("{:?}", uname),
+            None        => String::from("gamer"),
+        }
     }
 
     let arg = &args[1];
