@@ -45,8 +45,8 @@ impl Device for DeviceGeneric {
         vec![
             // Max TDP = 28
             Patch {
-                text_to_find: "return[n,t,r,e=>i((()=>p.Get().SetTDPLimit(e)))".to_string(),
-                replacement_text: format!("return[n,t,{:?},e=>i((()=>p.Get().SetTDPLimit(e)))", self.max_tdp).to_string(),
+                text_to_find: "return[o,t,n,e=>r((()=>g.Get().SetTDPLimit(e)))".to_string(),
+                replacement_text: format!("return[o,t,{:?},e=>r((()=>g.Get().SetTDPLimit(e)))", self.max_tdp).to_string(),
                 destination: PatchFile::Chunk,
             },
             // Listen to TDP changes
@@ -57,15 +57,15 @@ impl Device for DeviceGeneric {
             },
             // Replace Xbox menu button with Steam one
             Patch {
-                text_to_find: "case 4:return l.createElement".to_string(),
-                replacement_text: "case 4:case 31: return l.createElement".to_string(),
+                text_to_find: "/steaminputglyphs/xbox_button_logo.svg".to_string(),
+                replacement_text: "/steaminputglyphs/sc_button_steam.svg".to_string(),
                 destination: PatchFile::Chunk,
             },
 
             // Change resolution to Native (if Default) after installation
             Patch {
-                text_to_find: "DownloadComplete_Title\"),o=ze(r,t.data.appid());const s=(0,O.Q2)();".to_string(),
-                replacement_text: "DownloadComplete_Title\"),o=ze(r,t.data.appid()); SteamClient.Apps.GetResolutionOverrideForApp(t.data.appid()).then(res => res === \"Default\" && SteamClient.Apps.SetAppResolutionOverride(t.data.appid(), \"Native\")); const s=(0,O.Q2)();".to_string(),
+                text_to_find: "DownloadComplete_Title\"),i=Ve(n,t.data.appid());const l=(0,H.Q2)();".to_string(),
+                replacement_text: "DownloadComplete_Title\"),i=Ve(n,t.data.appid()); SteamClient.Apps.GetResolutionOverrideForApp(t.data.appid()).then(res => res === \"Default\" && SteamClient.Apps.SetAppResolutionOverride(t.data.appid(), \"Native\")); const l=(0,H.Q2)();".to_string(),
                 destination: PatchFile::Chunk,
             },
         ]
