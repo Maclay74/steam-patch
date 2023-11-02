@@ -1,11 +1,16 @@
 pub mod device_ally;
+pub mod device_ally_tdp_only;
 pub mod device_generic;
+use std::env;
 
 use crate::{patch::Patch, server::SettingsRequest};
-use device_ally::DeviceAlly;
+use device_ally_tdp_only::DeviceAllyTDPOnly;
 use device_generic::DeviceGeneric;
 use regex::Regex;
 use std::fs;
+use std::io::prelude::*;
+
+use self::device_ally::DeviceAlly;
 
 pub trait Device {
     fn update_settings(&self, request: SettingsRequest);
@@ -20,7 +25,38 @@ pub fn create_device() -> Option<Box<dyn Device>> {
             match device_name.trim() {
                 // Asus Rog Ally
                 "AMD Ryzen Z1 Extreme ASUSTeK COMPUTER INC. RC71L" => {
-                    Some(Box::new(DeviceAlly::new()))
+
+                return match env::home_dir() {
+                    Some(path) => match std::fs::File::open(path.join("steam-patch.conf")) {
+                        Ok(mut file) => {
+                            let mut contents: String = String::new();
+                            match file.read_to_string(&mut contents) {
+                                Ok(_result) => {
+                                    if contents.contains("native_input") {
+                                        Some(Box::new(DeviceAlly::new()))
+                                    } else {
+                                        println!("File ~/steam-patch.conf does NOT contains native_input. Using TDP control only.");
+                                        Some(Box::new(DeviceAllyTDPOnly::new()))
+                                    }
+                                },
+                                Err(_) => {
+                                    println!("Could not read file ~/steam-patch.conf");
+                                    Some(Box::new(DeviceAllyTDPOnly::new()))
+                                }
+                            }
+                        },
+                        Err(_) => {
+                            println!("Could not open file ~/steam-patch.conf");
+                            Some(Box::new(DeviceAllyTDPOnly::new()))
+                        }
+                    },
+                    None => {
+                        println!("Could not find home directory");
+                        Some(Box::new(DeviceAllyTDPOnly::new()))
+                    },
+                }
+
+                    
                 }
 
                 // Ayaneo 2
