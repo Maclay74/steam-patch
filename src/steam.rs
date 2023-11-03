@@ -281,9 +281,6 @@ impl SteamClient {
             }
         };
 
-        // if let Some(log_path) = Self::get_log_path() {
-        //     inotify.watches().add(log_path, WatchMask::MODIFY).unwrap();
-        // }
         // Get the log path using the existing function
         let log_path = match Self::get_log_path() {
             Some(path) => path,
