@@ -13,7 +13,6 @@ use std::path::PathBuf;
 use sysinfo::{ProcessExt, SystemExt};
 use tokio::time::{sleep, Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use futures::StreamExt; // Required for 'next' method on streams
 use tungstenite::connect;
 use tungstenite::stream::MaybeTlsStream;
 use tungstenite::{Message, WebSocket};
@@ -213,7 +212,7 @@ impl SteamClient {
                                         tab.title == "SharedJSContext" && !tab.webSocketDebuggerUrl.is_empty()
                                     }) {
                                         return Some(tab.webSocketDebuggerUrl);
-                                    }
+                                    } 
                                 }
                                 Err(_) => println!("Error: Failed to deserialize the response."),
                             }
@@ -221,9 +220,8 @@ impl SteamClient {
                         Err(_) => println!("Error: Failed to read the response body."),
                     }
                 }
-                Err(_) => println!("Couldn't connect to Steam, retrying..."),
+                Err(e) => println!("Couldn't connect to Steam, retrying... {:?}",e),
             }
-    
             sleep(Duration::from_millis(50)).await;
         }
         println!("Timeout while trying to fetch Steam data!");
@@ -307,7 +305,23 @@ impl SteamClient {
             loop {
                 if let Ok(events) = inotify.read_events_blocking(&mut buffer) {
                     for _ in events {
-                        let file = File::open(Self::get_log_path().unwrap()).unwrap();
+                        //Remove unwrap
+                        let log_path = match Self::get_log_path() {
+                            Some(path) => path,
+                            None => {
+                                println!("Log path not found.");
+                                continue;
+                            }
+                        };
+                        
+                        // let file = File::open(Self::get_log_path().unwrap()).unwrap();
+                        let file = match File::open(&log_path) {
+                            Ok(file) => file,
+                            Err(e) => {
+                                println!("Error opening file '{}': {}", log_path.display(), e);
+                                continue;
+                            }
+                        };
                         let reader = BufReader::new(file);
 
                         match reader.lines().last() {
