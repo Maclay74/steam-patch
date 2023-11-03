@@ -1,0 +1,77 @@
+name: Rust Build
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📚 Checkout Code
+        uses: actions/checkout@v2
+
+      - name: 🛠️ Set Script Permissions
+        run: |
+          chmod +x ./install.sh
+          chmod +x ./uninstall.sh
+
+      - name: 📦 Warm up cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: 🦀 Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+          override: true
+
+      - name: 🏗️ Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target x86_64-unknown-linux-gnu
+
+      - name: ✂️ Strip Debug Symbols
+        run: strip -s target/x86_64-unknown-linux-gnu/release/steam-patch
+
+      - name: ➡️ Compress executable with UPX
+        run: |
+          sudo apt-get install upx
+          upx --best target/x86_64-unknown-linux-gnu/release/steam-patch
+
+      - name: 📦 Upload build
+        uses: actions/upload-artifact@v2
+        with:
+          name: steam-patch
+          path: target/x86_64-unknown-linux-gnu/release/steam-patch
+
+      - name: 🚀 Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            target/x86_64-unknown-linux-gnu/release/steam-patch
+            install.sh
+            uninstall.sh
