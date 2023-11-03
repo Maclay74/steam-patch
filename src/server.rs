@@ -18,23 +18,37 @@ pub struct PerAppConfig {
 }
 
 async fn update_settings(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    println!("Received request to update settings.");
+
     // Convert the request body into bytes
-    let bytes = body::to_bytes(req.into_body())
-        .await
-        .map_err(|_| Response::new(Body::from("Internal server error")))
-        .unwrap();
+    let bytes = match body::to_bytes(req.into_body()).await {
+        Ok(b) => b,
+        Err(e) => {
+            println!("Error converting request body to bytes: {}", e);
+            return Ok(Response::new(Body::from("Internal server error")));
+        },
+    };
 
     // Parse the bytes into a SettingsRequest
-    let settings_request: SettingsRequest = serde_json::from_slice(&bytes)
-        .map_err(|_| Response::new(Body::from("Failed to deserialize request body")))
-        .unwrap();
+    let settings_request: SettingsRequest = match serde_json::from_slice(&bytes) {
+        Ok(req) => req,
+        Err(e) => {
+            println!("Error deserializing request body: {}", e);
+            return Ok(Response::new(Body::from("Failed to deserialize request body")));
+        },
+    };
 
     if let Some(device) = create_device() {
+        println!("Device created, updating settings.");
         device.update_settings(settings_request);
+    } else {
+        println!("Failed to create device.");
     }
 
+    println!("Settings updated successfully.");
     Ok(Response::new(Body::from("Settings updated")))
 }
+
 
 fn set_cors_headers(mut response: Response<Body>) -> Response<Body> {
     let headers = response.headers_mut();
@@ -54,25 +68,37 @@ fn set_cors_headers(mut response: Response<Body>) -> Response<Body> {
 
 async fn router(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let path = req.uri().path(); // Get the path of the request
+    println!("Routing request to {}", path);
 
     let response = match (req.method(), path) {
-        (&Method::POST, "/update_settings") => update_settings(req).await,
-        _ => Ok(Response::new(Body::empty())),
+        (&Method::POST, "/update_settings") => {
+            println!("Handling POST request to /update_settings");
+            update_settings(req).await
+        },
+        _ => {
+            println!("No route found for {} {}", req.method(), path);
+            Ok(Response::new(Body::from("404 Not Found")))
+        },
     };
 
+    println!("Request routed, setting CORS headers.");
     Ok(set_cors_headers(response?))
 }
 
 pub async fn run() {
-    let make_svc = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(router)) });
+    let make_svc = make_service_fn(|_conn| async {
+        println!("Connection established, creating service.");
+        Ok::<_, Infallible>(service_fn(router))
+    });
 
     let addr = ([127, 0, 0, 1], 1338).into();
+    println!("Attempting to bind server to address: {:?}", addr);
 
     let server = Server::bind(&addr).serve(make_svc);
 
-    println!("Server started");
+    println!("Server is running on http://{}", addr);
 
     if let Err(e) = server.await {
-        eprintln!("Server error: {}", e);
+        println!("Server error: {}", e);
     }
 }
