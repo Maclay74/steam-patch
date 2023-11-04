@@ -15,7 +15,7 @@ pub struct DeviceAlly {
 impl DeviceAlly {
     pub fn new() -> Self {
         DeviceAlly {
-            device: DeviceGeneric::new(32),
+            device: DeviceGeneric::new(32, 800,2700),
         }
     }
 }
@@ -23,9 +23,13 @@ impl DeviceAlly {
 impl Device for DeviceAlly {
     fn update_settings(&self, request: SettingsRequest) {
         if let Some(per_app) = &request.per_app {
+            println!("{:#?}",per_app);
             // TDP changes
             if let Some(tdp) = per_app.tdp_limit {
                 self.set_tdp(tdp);
+            }
+            if let Some(gpu) = per_app.gpu_performance_manual_mhz {
+                self.set_gpu(gpu);
             }
         }
     }
@@ -61,6 +65,10 @@ impl Device for DeviceAlly {
         });
 
         self.device.set_tdp(tdp);
+    }
+    fn set_gpu(&self, gpu: i16) {
+        //Placeholder for later implementations
+        println!("New GPU clock: {}", gpu);
     }
 
     fn get_key_mapper(&self) -> Option<tokio::task::JoinHandle<()>> {

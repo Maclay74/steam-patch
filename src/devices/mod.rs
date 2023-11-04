@@ -10,6 +10,7 @@ use std::fs;
 pub trait Device {
     fn update_settings(&self, request: SettingsRequest);
     fn set_tdp(&self, tdp: i8);
+    fn set_gpu(&self, gpu: i16);
     fn get_patches(&self) -> Vec<Patch>;
     fn get_key_mapper(&self) -> Option<tokio::task::JoinHandle<()>>;
 }
@@ -25,36 +26,36 @@ pub fn create_device() -> Option<Box<dyn Device>> {
 
                 // Ayaneo 2
                 "AMD Ryzen 7 6800U with Radeon Graphics AYANEO AYANEO 2" => {
-                    Some(Box::new(DeviceGeneric::new(28)))
+                    Some(Box::new(DeviceGeneric::new(28,800, 1500)))
                 }
 
                 // Ayaneo Geek
                 "AMD Ryzen 7 6800U with Radeon Graphics AYANEO GEEK" => {
-                    Some(Box::new(DeviceGeneric::new(28)))
+                    Some(Box::new(DeviceGeneric::new(28, 800,1500)))
                 }
 
                 // Ayaneo 2S
                 "AMD Ryzen 7 7840U w/ Radeon 780M Graphics AYANEO AYANEO 2S" => {
-                    Some(Box::new(DeviceGeneric::new(30)))
+                    Some(Box::new(DeviceGeneric::new(30,800, 1500)))
                 }
 
                 // Ayaneo Geek 1S
                 "AMD Ryzen 7 7840U w/ Radeon 780M Graphics AYANEO GEEK 1S" => {
-                    Some(Box::new(DeviceGeneric::new(30)))
+                    Some(Box::new(DeviceGeneric::new(30,800, 1500)))
                 }
 
                 // GPD WM2
                 "AMD Ryzen 7 6800U with Radeon Graphics GPD G1619-04" => {
-                    Some(Box::new(DeviceGeneric::new(28)))
+                    Some(Box::new(DeviceGeneric::new(28,800, 1500)))
                 }
 
                 // AOKZOE A1
                 "AMD Ryzen 7 6800U with Radeon Graphics AOKZOE AOKZOE A1 AR07" => {
-                    Some(Box::new(DeviceGeneric::new(28)))
+                    Some(Box::new(DeviceGeneric::new(28,800, 1500)))
                 }
 
                 // Any other device
-                _ => Some(Box::new(DeviceGeneric::new(25))),
+                _ => Some(Box::new(DeviceGeneric::new(25,800, 1500))),
             }
         }
         None => None,

@@ -13,8 +13,10 @@ pub struct SettingsRequest {
 }
 
 #[derive(Deserialize)]
+#[derive(Debug)]
 pub struct PerAppConfig {
     pub tdp_limit: Option<i8>,
+    pub gpu_performance_manual_mhz: Option<i16>
 }
 
 async fn update_settings(req: Request<Body>) -> Result<Response<Body>, Infallible> {
