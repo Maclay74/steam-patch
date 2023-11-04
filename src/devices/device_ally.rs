@@ -124,6 +124,14 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                         .execute("window.HandleSystemKeyEvents({eKey: 0})")
                                         .await;
                                 }
+
+                                // Back button(s) (unified) Revisit once separated
+                                // if key == evdev::Key::KEY_F15 && event.value() == 0 {
+                                //     println!("Show Menu");
+                                //     steam
+                                //         .execute("window.HandleSystemKeyEvents({eKey: 0})")
+                                //         .await;
+                                // }
                             }
                         },
                         Err(_) => {
