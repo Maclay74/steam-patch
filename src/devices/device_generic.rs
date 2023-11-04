@@ -6,11 +6,13 @@ use crate::utils;
 
 pub struct DeviceGeneric {
     max_tdp: i8,
+    max_gpu: i16,
+    min_gpu: i16,
 }
 
 impl DeviceGeneric {
-    pub fn new(max_tdp: i8) -> DeviceGeneric {
-        DeviceGeneric { max_tdp }
+    pub fn new(max_tdp: i8, min_gpu: i16, max_gpu: i16) -> DeviceGeneric {
+        DeviceGeneric { max_tdp, max_gpu, min_gpu}
     }
 }
 
@@ -20,6 +22,10 @@ impl Device for DeviceGeneric {
             // TDP changes
             if let Some(tdp) = per_app.tdp_limit {
                 self.set_tdp(tdp);
+            }
+            //GPU Clock changes
+            if let Some(gpu) = per_app.gpu_performance_manual_mhz {
+                self.set_gpu(gpu);
             }
         }
     }
@@ -41,6 +47,10 @@ impl Device for DeviceGeneric {
         }
     }
 
+    fn set_gpu(&self, gpu: i16) {
+        println!("Setting GPU to {}", gpu);
+    }
+
     fn get_patches(&self) -> Vec<Patch> {
         vec![
             // Max TDP = 28
@@ -49,12 +59,19 @@ impl Device for DeviceGeneric {
                 replacement_text: format!("return[o,t,{:?},e=>r((()=>g.Get().SetTDPLimit(e)))", self.max_tdp).to_string(),
                 destination: PatchFile::Chunk,
             },
-            // Listen to TDP changes
+            //Max GPU = 2700
+            Patch {
+                text_to_find: "return[o,t,n,e=>r((()=>g.Get().SetGPUPerformanceManualMhz(e)))".to_string(),
+                replacement_text: format!("return[o,t,{:?},e=>r((()=>g.Get().SetGPUPerformanceManualMhz(e)))", self.max_gpu).to_string(),
+                destination: PatchFile::Chunk,
+            },
+            // Listen changes
             Patch {
                 text_to_find: "const t=c.Hm.deserializeBinary(e).toObject();Object.keys(t)".to_string(),
                 replacement_text: "const t=c.Hm.deserializeBinary(e).toObject(); console.log(t); fetch(`http://localhost:1338/update_settings`, { method: 'POST',  headers: {'Content-Type': 'application/json'}, body: JSON.stringify(t.settings)}); Object.keys(t)".to_string(),
                 destination: PatchFile::Chunk,
-            },
+            }, 
+            
             // Replace Xbox menu button with Steam one
             Patch {
                 text_to_find: "/steaminputglyphs/xbox_button_logo.svg".to_string(),
