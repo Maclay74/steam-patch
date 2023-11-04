@@ -139,7 +139,7 @@ impl SteamClient {
                 Err(e) => eprintln!("Failed to write to file '{}': {}", path, e),
             };
         }
-        println!("Patching complete.");
+        println!("Unpatching complete.");
 
         Ok(())
     }
@@ -220,7 +220,16 @@ impl SteamClient {
                         Err(_) => println!("Error: Failed to read the response body."),
                     }
                 }
-                Err(e) => println!("Couldn't connect to Steam, retrying... {:?}",e),
+                Err(e) => {
+                    println!("Couldn't connect to Steam, retrying... {:?}",e);
+                    if e.is_connect(){
+                        println!("Failed to connect to host.");
+                    } else if e.is_timeout(){
+                        println!("Connection has timed out.");
+                    } else {
+                        println!("Error: {:?}", e);
+                    }
+                }
             }
             sleep(Duration::from_millis(50)).await;
         }
