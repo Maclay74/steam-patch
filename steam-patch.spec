@@ -69,5 +69,6 @@ mv /usr/bin/steamos-polkit-helpers/steamos-priv-write-bkp /usr/bin/steamos-polki
 /usr/bin/steamos-polkit-helpers/steamos-priv-write-updated
 
 %changelog
+* Fri Nov 03 2023 Diego Garcia <diegocorando@gmail.com> [1.0.0-1]
 * Fri Nov 03 2023 Jon LoBue <jlobue10@gmail.com> [1.0.0-1]
 - Initial package
