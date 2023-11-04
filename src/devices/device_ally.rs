@@ -25,8 +25,10 @@ impl Device for DeviceAlly {
         if let Some(per_app) = &request.per_app {
             println!("{:#?}",per_app);
             // TDP changes
-            if let Some(tdp) = per_app.tdp_limit {
-                self.set_tdp(tdp);
+            if let Some(true) = per_app.is_tdp_limit_enabled {
+                if let Some(tdp) = per_app.tdp_limit {
+                    self.set_tdp(tdp);
+                }
             }
             if let Some(gpu) = per_app.gpu_performance_manual_mhz {
                 self.set_gpu(gpu);
@@ -126,12 +128,12 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                 }
 
                                 // Back button(s) (unified) Revisit once separated
-                                // if key == evdev::Key::KEY_F15 && event.value() == 0 {
-                                //     println!("Show Menu");
-                                //     steam
-                                //         .execute("window.HandleSystemKeyEvents({eKey: 0})")
-                                //         .await;
-                                // }
+                                if key == evdev::Key::KEY_F15 && event.value() == 0 {
+                                    println!("Back buttons test");
+                                    steam
+                                        .execute("window.HandleSystemKeyEvents({eKey: 0})")
+                                        .await;
+                                }
                             }
                         },
                         Err(_) => {
