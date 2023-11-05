@@ -158,7 +158,7 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                 if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                     println!("Show QAM");
                                     steam
-                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 27, 2)")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 2)")
                                         .await;
                                 }
 
@@ -166,11 +166,11 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                 if key == evdev::Key::KEY_F16 && event.value() == 0 {
                                     println!("Show Menu");
                                     //Replace '28' with the SteamInput key code to emulate.
-                                    //GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)
+                                    //GamjourepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)
 
                                     
                                     steam
-                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 2); console.log(\"Show Menu\");")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 27, 2); console.log(\"Show Menu\");")
                                         .await;
                                 }
                                 
