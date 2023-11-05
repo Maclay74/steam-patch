@@ -9,6 +9,7 @@ use std::fs;
 
 pub trait Device {
     fn update_settings(&self, request: SettingsRequest);
+    fn set_thermalpolicy(&self, thermal_policy: i32);
     fn set_tdp(&self, tdp: i8);
     fn set_gpu(&self, gpu: i16);
     fn get_patches(&self) -> Vec<Patch>;

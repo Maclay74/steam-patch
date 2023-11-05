@@ -29,6 +29,10 @@ impl Device for DeviceGeneric {
             }
         }
     }
+    fn set_thermalpolicy(&self, thermalpolicy: i32){
+        // The actual implementation would go here
+        println!("Feature not implemented outside of ROG ALLY (Thermal policy): {}", thermalpolicy);
+    }
 
     fn set_tdp(&self, tdp: i8) {
         // Update TDP
@@ -65,12 +69,13 @@ impl Device for DeviceGeneric {
                 replacement_text: format!("return[o,t,{:?},e=>r((()=>g.Get().SetGPUPerformanceManualMhz(e)))", self.max_gpu).to_string(),
                 destination: PatchFile::Chunk,
             },
-            // Listen changes
+            // Listen to per app changes
             Patch {
                 text_to_find: "const t=c.Hm.deserializeBinary(e).toObject();Object.keys(t)".to_string(),
                 replacement_text: "const t=c.Hm.deserializeBinary(e).toObject(); console.log(t); fetch(`http://localhost:1338/update_settings`, { method: 'POST',  headers: {'Content-Type': 'application/json'}, body: JSON.stringify(t.settings)}); Object.keys(t)".to_string(),
                 destination: PatchFile::Chunk,
             }, 
+            //
             
             // Replace Xbox menu button with Steam one
             Patch {

@@ -7,6 +7,7 @@ use crate::steam::SteamClient;
 use std::fs;
 use std::thread;
 use std::time::Duration;
+use std::io::{self, Write};
 
 pub struct DeviceAlly {
     device: DeviceGeneric,
@@ -17,10 +18,39 @@ impl DeviceAlly {
         DeviceAlly {
             device: DeviceGeneric::new(30, 800,2700),
         }
+        
     }
 }
 
 impl Device for DeviceAlly {
+    fn set_thermalpolicy(&self, thermal_policy: i32) {
+        println!("Setting new thermal policy: {}", thermal_policy);
+        
+        let file_path = "/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy";
+    
+        // Attempt to write the thermal policy to the file.
+        match fs::write(file_path, thermal_policy.to_string()) {
+            Ok(_) => {
+                // Optionally, add a small delay to give the system time to apply the setting.
+                thread::sleep(Duration::from_millis(50));
+    
+                // Read the file back to confirm.
+                match fs::read_to_string(file_path) {
+                    Ok(content) if content.trim() == thermal_policy.to_string() => {
+                        println!("Thermal policy set successfully.");
+                    },
+                    _ => {
+                        eprintln!("Failed to set thermal policy. Value could not be confirmed.");
+                    }
+                }
+            },
+            Err(e) => {
+                // Handle the error, but don't propagate it.
+                eprintln!("Failed to write thermal policy: {}", e);
+            }
+        };
+    }
+
     fn update_settings(&self, request: SettingsRequest) {
         if let Some(per_app) = &request.per_app {
             println!("{:#?}",per_app);
@@ -29,7 +59,10 @@ impl Device for DeviceAlly {
                 if let Some(tdp) = per_app.tdp_limit {
                     self.set_tdp(tdp);
                 }
+            }  else {
+                self.set_thermalpolicy(1);
             }
+
             if let Some(gpu) = per_app.gpu_performance_manual_mhz {
                 self.set_gpu(gpu);
             }
@@ -53,19 +86,7 @@ impl Device for DeviceAlly {
             val if (12..=25).contains(&val) => 0, // performance
             _ => 1,                               // turbo
         };
-
-        println!("New Policy: {}", thermal_policy);
-
-        let file_path = "/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy";
-        let _ = thread::spawn(move || match fs::read_to_string(file_path) {
-            Ok(content) if content.trim() != thermal_policy.to_string() => {
-                thread::sleep(Duration::from_millis(50));
-                fs::write(file_path, thermal_policy.to_string())
-                    .expect("Couldn't change thermal policy")
-            }
-            _ => {}
-        });
-
+        self.set_thermalpolicy(thermal_policy);
         self.device.set_tdp(tdp);
     }
     fn set_gpu(&self, gpu: i16) {
@@ -93,7 +114,7 @@ pub fn pick_device() -> Option<evdev::Device> {
 
         if input_id.vendor() == target_vendor_id && input_id.product() == target_product_id {
             if device.supported_keys().map_or(false, |keys| keys.contains(evdev::Key::KEY_PROG1)) {
-                return Some(device);
+                return Some(device);   
             }
         }
     }
@@ -103,7 +124,7 @@ pub fn pick_device() -> Option<evdev::Device> {
 
 pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>> {
     let device = pick_device();
-
+    
     match device {
         Some(device) => Some(tokio::spawn(async move {
             if let Ok(mut events) = device.into_event_stream() {
@@ -112,8 +133,14 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                         Ok(event) => {
                             if let evdev::InputEventKind::Key(key) = event.kind() {
                                 //Useful to get status on event, saved for future use.
-                                //GamepadNavTree.m_Controller.GetEventTarget(27, true)
-                                
+                                //Another method of sending keys to steam:
+                                // GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28)
+                                // isButtonDown, // originally 'e'
+                                // gamepadButton, // originally 't'
+                                // source, // originally 'n'
+                                // r, // purpose unclear, original parameter 'r' - could be a timestamp or specific event data
+                                // isRepeat, // originally 'o'
+
                                 //             list of values found
                                 //     e[e.INVALID = 0] = "INVALID",
                                 //     e[e.OK = 1] = "OK",
@@ -144,8 +171,7 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                 //     e[e.REAR_RIGHT_LOWER = 26] = "REAR_RIGHT_LOWER",
                                 //     e[e.STEAM_GUIDE = 27] = "STEAM_GUIDE",
                                 //     e[e.STEAM_QUICK_MENU = 28] = "STEAM_QUICK_MENU"
-                                // }(r || (r = {})),
-                                // function(e) {
+
                                 //     e[e.UNKNOWN = 0] = "UNKNOWN",
                                 //     e[e.GAMEPAD = 1] = "GAMEPAD",
                                 //     e[e.KEYBOARD = 2] = "KEYBOARD",
@@ -165,10 +191,6 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                 // Main menu button pressed
                                 if key == evdev::Key::KEY_F16 && event.value() == 0 {
                                     println!("Show Menu");
-                                    //Replace '28' with the SteamInput key code to emulate.
-                                    //GamjourepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)
-
-                                    
                                     steam
                                         .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 27, 2); console.log(\"Show Menu\");")
                                         .await;
