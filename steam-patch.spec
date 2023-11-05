@@ -30,7 +30,7 @@ unzip $RPM_SOURCE_DIR/steam-patch-main.zip -d %{_builddir}
 mkdir -p %{_builddir}/steam-patch
 cp -rf %{_builddir}/steam-patch-main/* %{_builddir}/steam-patch
 rm -rf %{_builddir}/steam-patch-main
-cp -f %{_builddir}/steam-patch/{steam-patch.service,restart-steam-patch-on-boot.service} $RPM_SOURCE_DIR
+cp -f %{_builddir}/steam-patch/{steam-patch.service,restart-steam-patch-on-boot.service,steamos-priv-write-updated} $RPM_SOURCE_DIR
 
 %build
 cd %{_builddir}/steam-patch
