@@ -1,0 +1,11 @@
+[Unit]
+Description=Service to restart steam-patch on system boot
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl restart steam-patch.service
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target
