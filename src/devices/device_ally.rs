@@ -111,11 +111,54 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                     match events.next_event().await {
                         Ok(event) => {
                             if let evdev::InputEventKind::Key(key) = event.kind() {
+                                //Useful to get status on event, saved for future use.
+                                //GamepadNavTree.m_Controller.GetEventTarget(27, true)
+                                
+                                //             list of values found
+                                //     e[e.INVALID = 0] = "INVALID",
+                                //     e[e.OK = 1] = "OK",
+                                //     e[e.CANCEL = 2] = "CANCEL",
+                                //     e[e.SECONDARY = 3] = "SECONDARY",
+                                //     e[e.OPTIONS = 4] = "OPTIONS",
+                                //     e[e.BUMPER_LEFT = 5] = "BUMPER_LEFT",
+                                //     e[e.BUMPER_RIGHT = 6] = "BUMPER_RIGHT",
+                                //     e[e.TRIGGER_LEFT = 7] = "TRIGGER_LEFT",
+                                //     e[e.TRIGGER_RIGHT = 8] = "TRIGGER_RIGHT",
+                                //     e[e.DIR_UP = 9] = "DIR_UP",
+                                //     e[e.DIR_DOWN = 10] = "DIR_DOWN",
+                                //     e[e.DIR_LEFT = 11] = "DIR_LEFT",
+                                //     e[e.DIR_RIGHT = 12] = "DIR_RIGHT",
+                                //     e[e.SELECT = 13] = "SELECT",
+                                //     e[e.START = 14] = "START",
+                                //     e[e.LSTICK_CLICK = 15] = "LSTICK_CLICK",
+                                //     e[e.RSTICK_CLICK = 16] = "RSTICK_CLICK",
+                                //     e[e.LSTICK_TOUCH = 17] = "LSTICK_TOUCH",
+                                //     e[e.RSTICK_TOUCH = 18] = "RSTICK_TOUCH",
+                                //     e[e.LPAD_TOUCH = 19] = "LPAD_TOUCH",
+                                //     e[e.LPAD_CLICK = 20] = "LPAD_CLICK",
+                                //     e[e.RPAD_TOUCH = 21] = "RPAD_TOUCH",
+                                //     e[e.RPAD_CLICK = 22] = "RPAD_CLICK",
+                                //     e[e.REAR_LEFT_UPPER = 23] = "REAR_LEFT_UPPER",
+                                //     e[e.REAR_LEFT_LOWER = 24] = "REAR_LEFT_LOWER",
+                                //     e[e.REAR_RIGHT_UPPER = 25] = "REAR_RIGHT_UPPER",
+                                //     e[e.REAR_RIGHT_LOWER = 26] = "REAR_RIGHT_LOWER",
+                                //     e[e.STEAM_GUIDE = 27] = "STEAM_GUIDE",
+                                //     e[e.STEAM_QUICK_MENU = 28] = "STEAM_QUICK_MENU"
+                                // }(r || (r = {})),
+                                // function(e) {
+                                //     e[e.UNKNOWN = 0] = "UNKNOWN",
+                                //     e[e.GAMEPAD = 1] = "GAMEPAD",
+                                //     e[e.KEYBOARD = 2] = "KEYBOARD",
+                                //     e[e.MOUSE = 3] = "MOUSE",
+                                //     e[e.TOUCH = 4] = "TOUCH",
+                                //     e[e.LPAD = 5] = "LPAD",
+                                //     e[e.RPAD = 6] = "RPAD"
+
                                 // QAM button pressed
                                 if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                     println!("Show QAM");
                                     steam
-                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 27, 2)")
                                         .await;
                                 }
 
@@ -124,16 +167,18 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                     println!("Show Menu");
                                     //Replace '28' with the SteamInput key code to emulate.
                                     //GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)
+
+                                    
                                     steam
-                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 27, 1, -1); console.log(\"Show Menu\");")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 2); console.log(\"Show Menu\");")
                                         .await;
                                 }
-
+                                
                                 // Back button(s) (unified) Revisit once separated
                                 if key == evdev::Key::KEY_F15 && event.value() == 0 {
                                     
                                     steam
-                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 26, 1, -1); console.log(\"Simulating Rear right lower SteamDeck button\");")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 26, 2); console.log(\"Simulating Rear right lower SteamDeck button\");")
                                         .await;
                                 }
                             }
