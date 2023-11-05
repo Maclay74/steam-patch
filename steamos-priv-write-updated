@@ -1,0 +1,314 @@
+#!/usr/bin/sh
+
+set -eu
+
+if [[ $EUID -ne 0 ]];
+then
+    exec pkexec --disable-internal-agent "$0" "$@"
+fi
+
+WRITE_PATH="$1"
+WRITE_VALUE="$2"
+
+DECK=""
+ZSERIES=""
+
+#HXSERIES6=""
+#HSERIES6=""
+#HSSERIES6=""
+USERIES6=""
+
+#HXSERIES7=""
+#HSERIES7=""
+#HSSERIES7=""
+USERIES7=""
+USERIES7LP=""
+
+# 15w Steam Deck
+if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Custom' | grep '0405 ') ]]; then
+        DECK=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Custom' | grep '0405 ')
+fi
+
+# 9-30w Z series
+if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'Z1 ') ]]; then
+        ZSERIES=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'Z1 ')
+fi
+
+# 6000 series 45w HX
+#if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'HX ') ]]; then
+#        HXSERIES6=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'HX ')
+#fi
+
+# 6000 series 45w H
+#if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'H ') ]]; then
+#        HSERIES6=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'H ')
+#fi
+
+# 6000 series 35w HS
+#if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'HS ') ]]; then
+#        HSSERIES6=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'HS ')
+#fi
+
+# 6000 series 15-30w U -- controlled by temperature
+if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'U ') ]]; then
+        USERIES6=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 6' | grep -v '6 ' | grep 'U ')
+fi
+
+# 7000 series 55-75w HX
+#if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'HX ') ]]; then
+#        HXSERIES7=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'HX ')
+#fi
+
+# 7000 series 35-54w H
+#if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'H ') ]]; then
+#        HSERIES7=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'H ')
+#fi
+
+# 7000 series 35-54w HS
+#if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'HS ') ]]; then
+#       HSSERIES7=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'HS ')
+#fi
+
+# 7000 series 15-30w U -- controlled by temperature
+if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'U ' | grep -v 'PRO' | grep -v '7520' | grep -v '7320') ]]; then
+        USERIES7=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'U ')
+fi
+
+# 7000 series 15w PRO/7520/7320 U
+if [[ -n $(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'U ') ]]; then
+        USERIES7LP=$(lscpu | grep 'Model name' | grep -v 'BIOS' | grep 'AMD Ryzen' | grep ' 7' | grep -v '7 ' | grep 'U ')
+fi
+
+# TODO - add gpu detection entries for:
+# 780M
+# 760M
+# 740M
+# 680M
+# 660M
+# 610M
+# Vega (PRO only)
+
+function CommitWrite()
+{
+    echo "commit: $WRITE_VALUE -> $WRITE_PATH" | systemd-cat -t p-steamos-priv-write -p warning
+    echo "$WRITE_VALUE" > "$WRITE_PATH"
+    chmod a+w "$WRITE_PATH"
+    exit 0
+}
+
+
+function DeclineWrite()
+{
+    echo "decline: $WRITE_VALUE -> $WRITE_PATH" | systemd-cat -t p-steamos-priv-write -p err
+    echo "$WRITE_VALUE" > "$WRITE_PATH"
+    exit 1
+}
+
+
+if [[ "$WRITE_PATH" == /sys/class/backlight/*/brightness ]]; then
+        CommitWrite
+fi
+
+if [[ "$WRITE_PATH" == /sys/class/drm/card*/device/power_dpm_force_performance_level ]]; then
+
+        # if device does not have a battery don't apply any power changes
+        if [[ -z $(upower -i "$(upower -e | grep 'BAT')" | grep -E "percentage" | awk '{print $2}' | sed 's/\%//g') ]]; then
+                exit 0
+        fi
+
+        for i in $(ls /sys/class/drm/):
+        do
+                WRITE_PATH="/sys/class/drm/$i/device/power_dpm_force_performance_level"
+                CommitWrite
+        done
+fi
+
+
+if [[ "$WRITE_PATH" == /sys/class/drm/card*/device/pp_od_clk_voltage ]]; then
+
+        # if device does not have a battery don't apply any power changes
+        if [[ -z $(upower -i "$(upower -e | grep 'BAT')" | grep -E "percentage" | awk '{print $2}' | sed 's/\%//g') ]]; then
+                exit 0
+        fi
+
+        for i in $(ls /sys/class/drm/):
+        do
+                WRITE_PATH="/sys/class/drm/$i/device/pp_od_clk_voltage"
+
+		# TODO - remap reclock entries for:
+		# 780M: 2700, 2800 (7940H,7940HS)
+		# 760M: 2600
+		# 740M: 2500
+		# 680M: 2200, 2400 (6900HX,6980HX)
+		# 660M: 1800, 1900 (7535HS,7535U)
+		# 610M: 1900, 2200 (7945HX,7845HX,7745HX,7645HX)
+		# Vega (PRO only): 1800, 2000 (7730U,7530U)
+
+		# GPU Reclocking example
+		# TODO: change this to GPU model based
+                if [[ -n $USERIES6 ]]; then
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1600/ 2200/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1500/ 2000/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1400/ 1800/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1300/ 1600/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1200/ 1400/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1100/ 1300/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1000/ 1200/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 900/ 1100/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 800/ 1000/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 700/ 900/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 600/ 800/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 500/ 700/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 400/ 600/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 300/ 400/g')
+                        WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 200/ 200/g')
+                        echo "$WRITE_VALUE" >> ~/.power
+                fi
+        if [[ -n $ZSERIES ]]; then
+: <<'END_COMMENT'
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1600/ 2700/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1500/ 2400/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1400/ 2200/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1300/ 2100/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1200/ 1800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1100/ 1600/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 1000/ 1400/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 900/ 1200/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 800/ 800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 700/ 800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 600/ 800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 500/ 800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 400/ 800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 300/ 800/g')
+                WRITE_VALUE=$(echo "$WRITE_VALUE" | sed -e 's/ 200/ 800/g')
+END_COMMENT
+                echo "$WRITE_VALUE" >> ~/.power
+                fi
+                CommitWrite
+        done
+fi
+
+if [[ "$WRITE_PATH" == /sys/class/hwmon/hwmon*/power*_cap ]]; then
+
+        # if device does not have a battery don't apply any power changes
+        if [[ -z $(upower -i "$(upower -e | grep 'BAT')" | grep -E "percentage" | awk '{print $2}' | sed 's/\%//g') ]]; then
+                exit 0
+        fi
+
+	# Deck and U series low-power/PRO have same 15w tdp
+        if [[ -n $DECK ]] || [[ -n $USERIES7LP ]]; then
+                CommitWrite
+        fi
+
+	# TODO - remap TDP entries for:
+	# HXSERIES6,HSERIES6: 45w
+	# HSSERIES6: 35w
+	# HXSERIES7: 55-75w
+	# HSERIES7, HSSERIES7: 35-54w
+
+	# 6000 and 7000 U series have same 15-30w tdp, handled by adjusting temperature instead
+
+	# TDP adjust example based on temperature
+        if [[ -n $USERIES6 ]] || [[ -n $USERIES7 ]]; then
+                if [[ "$WRITE_VALUE" == "15000000" ]]; then
+                        sudo ryzenadj -f 90
+                fi
+                if [[ "$WRITE_VALUE" == "14000000" ]]; then
+                        sudo ryzenadj -f 86
+                fi
+                if [[ "$WRITE_VALUE" == "13000000" ]]; then
+                        sudo ryzenadj -f 82
+                fi
+                if [[ "$WRITE_VALUE" == "12000000" ]]; then
+                        sudo ryzenadj -f 78
+                fi
+                if [[ "$WRITE_VALUE" == "11000000" ]]; then
+                        ryzenadj -f 74
+                fi
+                if [[ "$WRITE_VALUE" == "10000000" ]]; then
+                        sudo ryzenadj -f 70
+                fi
+                if [[ "$WRITE_VALUE" == "9000000" ]]; then
+                        sudo ryzenadj -f 66
+                fi
+                if [[ "$WRITE_VALUE" == "8000000" ]]; then
+                        sudo ryzenadj -f 62
+                fi
+                if [[ "$WRITE_VALUE" == "7000000" ]]; then
+                        sudo ryzenadj -f 58
+                fi
+                if [[ "$WRITE_VALUE" == "6000000" ]]; then
+                        sudo ryzenadj -f 54
+                fi
+                if [[ "$WRITE_VALUE" == "5000000" ]]; then
+                        sudo ryzenadj -f 50
+                fi
+                if [[ "$WRITE_VALUE" == "4000000" ]]; then
+                        sudo ryzenadj -f 46
+                fi
+                if [[ "$WRITE_VALUE" == "3000000" ]]; then
+                        sudo ryzenadj -f 42
+                fi
+                exit 0
+        fi
+
+        # TDP adjust example based on TDP
+        # ROG Ally
+: <<'comment'
+        if [[ -n $ZSERIES ]]; then
+		if [[ "$WRITE_VALUE" == "15000000" ]]; then
+        		sudo ryzenadj --stapm-limit=30000 --fast-limit=53000 --slow-limit=45000 --tctl-temp=95 --max-gfxclk=2900
+		fi
+		if [[ "$WRITE_VALUE" == "14000000" ]]; then
+        		sudo ryzenadj --stapm-limit=28000 --fast-limit=49000 --slow-limit=42000 --tctl-temp=95 --max-gfxclk=2900
+		fi
+		if [[ "$WRITE_VALUE" == "13000000" ]]; then
+        		sudo ryzenadj --stapm-limit=26000 --fast-limit=45000 --slow-limit=39000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "12000000" ]]; then
+        		sudo ryzenadj --stapm-limit=24000 --fast-limit=42000 --slow-limit=35000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "11000000" ]]; then
+        		sudo ryzenadj --stapm-limit=22000 --fast-limit=38000 --slow-limit=32000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "10000000" ]]; then
+        		sudo ryzenadj --stapm-limit=20000 --fast-limit=34000 --slow-limit=29000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "9000000" ]]; then
+        		sudo ryzenadj --stapm-limit=18000 --fast-limit=30000 --slow-limit=26000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "8000000" ]]; then
+        		sudo ryzenadj --stapm-limit=15000 --fast-limit=26000 --slow-limit=22000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "7000000" ]]; then
+        		sudo ryzenadj --stapm-limit=13000 --fast-limit=22000 --slow-limit=19000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "6000000" ]]; then
+        		sudo ryzenadj --stapm-limit=11000 --fast-limit=19000 --slow-limit=16000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "5000000" ]]; then
+        		sudo ryzenadj --stapm-limit=9000 --fast-limit=15000 --slow-limit=13000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "4000000" ]]; then
+        		sudo ryzenadj --stapm-limit=7000 --fast-limit=11000 --slow-limit=9000 --tctl-temp=95 --max-gfxclk=2900
+    		fi
+    		if [[ "$WRITE_VALUE" == "3000000" ]]; then
+        		sudo ryzenadj --stapm-limit=5000 --fast-limit=7000 --slow-limit=6000 --tctl-temp=85 --max-gfxclk=2900
+    		fi
+	fi
+fi
+comment
+
+if [[ "$WRITE_PATH" == /sys/devices/platform/*/*/*/iio:device*/in_illuminance_integration_time ]]; then
+        CommitWrite
+fi
+
+if [[ "$WRITE_PATH" == /sys/devices/*/*/*/*/hwmon/hwmon*/led_brightness ]]; then
+        CommitWrite
+fi
+
+if [[ "$WRITE_PATH" == /sys/devices/*/*/*/*/hwmon/hwmon*/content_adaptive_brightness ]]; then
+        CommitWrite
+fi
+
+DeclineWrite
