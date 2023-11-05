@@ -22,6 +22,10 @@ Steam Patch for ASUS ROG ALLY
 
 %prep
 rm -rf %{_builddir}/steam-patch
+cd $RPM_SOURCE_DIR
+rm -f steam-patch-main.zip
+wget https://github.com/corando98/steam-patch/archive/refs/heads/main.zip
+mv main.zip steam-patch-main.zip
 unzip $RPM_SOURCE_DIR/steam-patch-main.zip -d %{_builddir}
 mkdir -p %{_builddir}/steam-patch
 cp -rf %{_builddir}/steam-patch-main/* %{_builddir}/steam-patch
@@ -70,5 +74,4 @@ mv /usr/bin/steamos-polkit-helpers/steamos-priv-write-bkp /usr/bin/steamos-polki
 
 %changelog
 * Fri Nov 03 2023 Diego Garcia <diegocorando@gmail.com> [1.0.0-1]
-* Fri Nov 03 2023 Jon LoBue <jlobue10@gmail.com> [1.0.0-1]
 - Initial package
