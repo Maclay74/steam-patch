@@ -115,26 +115,27 @@ pub fn start_mapper(mut steam:SteamClient) -> Option<tokio::task::JoinHandle<()>
                                 if key == evdev::Key::KEY_PROG1 && event.value() == 0 {
                                     println!("Show QAM");
                                     steam
-                                        .execute("window.HandleSystemKeyEvents({eKey: 1})")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)")
                                         .await;
                                 }
 
                                 // Main menu button pressed
                                 if key == evdev::Key::KEY_F16 && event.value() == 0 {
                                     println!("Show Menu");
+                                    //Replace '28' with the SteamInput key code to emulate.
+                                    //GamepadNavTree.m_Controller.OnButtonActionInternal(true, 28, 1, -1)
                                     steam
-                                        .execute("window.HandleSystemKeyEvents({eKey: 0})")
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 27, 1, -1); console.log(\"Show Menu\");")
                                         .await;
                                 }
 
-                                // // Back button(s) (unified) Revisit once separated
-                                // if key == evdev::Key::KEY_F15 && event.value() == 0 {
-                                //     println!("Back buttons test");
+                                // Back button(s) (unified) Revisit once separated
+                                if key == evdev::Key::KEY_F15 && event.value() == 0 {
                                     
-                                //     steam
-                                //         .execute("window.HandleSystemKeyEvents({eKey: 0})")
-                                //         .await;
-                                // }
+                                    steam
+                                        .execute("GamepadNavTree.m_Controller.OnButtonActionInternal(true, 26, 1, -1); console.log(\"Simulating Rear right lower SteamDeck button\");")
+                                        .await;
+                                }
                             }
                         },
                         Err(_) => {

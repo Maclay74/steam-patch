@@ -150,7 +150,10 @@ impl SteamClient {
         while retries > 0 {
             match self.socket.as_mut() {
                 Some(socket) => match socket.send(Message::Text(message.to_string())) {
-                    Ok(_) => break,
+                    Ok(_) => {
+                        println!("Successfully sent message., {:}", message);
+                        break
+                    }
                     Err(_) => {
                         eprintln!("Couldn't send message to Steam, retrying...");
 
@@ -300,6 +303,7 @@ impl SteamClient {
         match inotify.watches().add(&log_path, WatchMask::MODIFY) {
             Ok(_) => println!("Watching log path: {:?}", log_path),
             Err(e) => {
+                eprintln!("Failed looking for {:?}", log_path);
                 eprintln!("Failed to add a watch to the log path: {:?}", e);
                 return None;
             }
